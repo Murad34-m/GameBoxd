@@ -1968,6 +1968,19 @@ function queueRawgLookup(coverEl,title,key){
   rawgArtQueue.push({title:title,key:key,gid:gid});
   processRawgArtQueue();
 }
+/* RAWG is tried FIRST for games without a Steam App ID (Wikipedia often returns logos). next() continues the old chain if RAWG has nothing. */
+function rawgFirst(el,title,key,next){
+  var c=rawgArtCache[key];
+  if(c&&c.url){insertExternalImageForTitle(key,c.url,title);return}
+  if(c){next();return}
+  var gid=el.dataset.gameId,cu=gid?rawgArtUrl(rawgCacheGet(gid)):"";
+  if(cu){rawgArtCache[key]={url:cu};saveRawgArtCache();insertExternalImageForTitle(key,cu,title);return}
+  if(!sb||!sb.functions){next();return}
+  if(rawgArtAttempted[key])return;
+  rawgArtAttempted[key]=true;
+  rawgArtQueue.push({title:title,key:key,gid:gid,next:next});
+  processRawgArtQueue();
+}
 function processRawgArtQueue(){
   if(rawgArtBusy||!rawgArtQueue.length)return;
   rawgArtBusy=true;
@@ -1975,8 +1988,8 @@ function processRawgArtQueue(){
   sb.functions.invoke("rawg",{body:{title:job.title}}).then(function(r){
     var d=r&&!r.error?r.data:null,u=rawgArtUrl(d);
     if(u){rawgArtCache[job.key]={url:u};saveRawgArtCache();insertExternalImageForTitle(job.key,u,job.title);if(job.gid&&d)rawgCachePut(job.gid,d)}
-    else if(d&&d.found===false){rawgArtCache[job.key]={notFound:true};saveRawgArtCache()}
-  }).catch(function(){})
+    else{if(d&&d.found===false){rawgArtCache[job.key]={notFound:true};saveRawgArtCache()}if(job.next)job.next()}
+  }).catch(function(){if(job.next)job.next()})
   .then(function(){rawgArtBusy=false;setTimeout(processRawgArtQueue,300)});
 }
 function steamAfterWiki(el,title,key){
@@ -2031,6 +2044,7 @@ function queueSteamLookup(coverEl){
   var title=coverEl.dataset.gameTitle||"",key=normalizeSteamTitle(title);
   if(!key)return;
   rememberArtCover(key,coverEl);
+  if(!coverEl.dataset.rawgTried){coverEl.dataset.rawgTried="1";rawgFirst(coverEl,title,key,function(){queueSteamLookup(coverEl)});return}
   if(coverEl.dataset.wiki==="1"){queueWikiLookup(coverEl,title);return}
   var cached=steamLookupCache[key];
   if(cached){
@@ -2078,7 +2092,7 @@ function cover(g,small){
   else if(shape===1)art='<polygon points="0,60 200,0 200,120 0,190" fill="hsl('+h2+' 80% 58%)" opacity=".85"/><polygon points="0,190 200,120 200,160 0,250" fill="hsl('+h1+' 70% 20%)" opacity=".5"/>';
   else if(shape===2)art='<g fill="none" stroke="hsl('+h2+' 85% 66%)" stroke-width="10" opacity=".85"><circle cx="100" cy="115" r="30"/><circle cx="100" cy="115" r="60"/><circle cx="100" cy="115" r="90"/></g>';
   else art='<g fill="hsl('+h2+' 85% 62%)" opacity=".85"><rect x="-20" y="30" width="260" height="22" transform="rotate(-18 100 100)"/><rect x="-20" y="80" width="260" height="22" transform="rotate(-18 100 100)"/><rect x="-20" y="130" width="260" height="22" transform="rotate(-18 100 100)"/></g>';
-  var appId=STEAM_APP_IDS[g.id],wt=g.w||WIKI_TITLES[g.id]||"",searchAttr=' data-game-id="'+esc(g.id)+'" data-game-title="'+esc(g.t)+'"'+(appId||COVER_ART[g.id]?"":' data-steam-search="1"'+(wt?' data-wiki="1"':""));
+  var appId=STEAM_APP_IDS[g.id],wt=g.w||WIKI_TITLES[g.id]||"",searchAttr=' data-game-id="'+esc(g.id)+'" data-game-title="'+esc(g.t)+'"'+(appId?"":' data-steam-search="1"'+(wt?' data-wiki="1"':""));
   var image=appId?'<img class="steam-art" data-steam-app="'+appId+'" alt="" loading="lazy" src="'+steamArtSources(appId,"")[0]+'">':"";
   var mc=METACRITIC_SCORES[g.id],glyph='<text x="100" y="150" text-anchor="middle" font-size="54" opacity=".92">'+(GLYPH[g.g]||"🎮")+'</text>';
   return '<div class="cover'+(small?" sm":"")+'"'+searchAttr+'><svg viewBox="0 0 200 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><defs><linearGradient id="'+id+'" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="hsl('+h1+' 60% 30%)"/><stop offset="1" stop-color="hsl('+h1+' 55% 12%)"/></linearGradient></defs><rect width="200" height="300" fill="url(#'+id+')"/>'+(COVER_ART[g.id]||art+glyph)+'</svg>'+image+(mc!=null?'<span class="mc-score" title="Metacritic critic score">MC '+mc+'</span>':"")+'<div class="ct">'+esc(g.t)+'</div></div>'; 
