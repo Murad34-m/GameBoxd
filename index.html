@@ -1943,9 +1943,45 @@ function wikiBySearch(title,suffix,min){
   });
 }
 /* Wikipedia had no image: try the Steam store search once as a second source */
+/* Last fallback: RAWG (via the Supabase Edge Function "rawg") when Steam and Wikipedia have no artwork */
+var RAWG_ART_KEY="gameboxd_rawg_art_cache_v1";
+var rawgArtCache=(function(){try{return JSON.parse(localStorage.getItem(RAWG_ART_KEY)||"{}")}catch(e){return {}}})();
+var rawgArtAttempted={},rawgArtQueue=[],rawgArtBusy=false;
+function saveRawgArtCache(){try{localStorage.setItem(RAWG_ART_KEY,JSON.stringify(rawgArtCache))}catch(e){}}
+function rawgArtUrl(d){
+  if(!d||!d.found)return "";
+  var u=rawgHttps(d.banner)||rawgHttps(d.banner2);
+  if(!u&&Array.isArray(d.shots))u=d.shots.map(rawgHttps).filter(Boolean)[0]||"";
+  return u||"";
+}
+function queueRawgLookup(coverEl,title,key){
+  if(!coverEl||!document.contains(coverEl))return;
+  title=title||coverEl.dataset.gameTitle||"";key=key||normalizeSteamTitle(title);
+  if(!key)return;
+  rememberArtCover(key,coverEl);
+  var c=rawgArtCache[key];
+  if(c){if(c.url)insertExternalImageForTitle(key,c.url,title);return}
+  var gid=coverEl.dataset.gameId,cd=gid?rawgCacheGet(gid):null,cu=rawgArtUrl(cd);
+  if(cu){rawgArtCache[key]={url:cu};saveRawgArtCache();insertExternalImageForTitle(key,cu,title);return}
+  if(!sb||!sb.functions||rawgArtAttempted[key])return;
+  rawgArtAttempted[key]=true;
+  rawgArtQueue.push({title:title,key:key,gid:gid});
+  processRawgArtQueue();
+}
+function processRawgArtQueue(){
+  if(rawgArtBusy||!rawgArtQueue.length)return;
+  rawgArtBusy=true;
+  var job=rawgArtQueue.shift();
+  sb.functions.invoke("rawg",{body:{title:job.title}}).then(function(r){
+    var d=r&&!r.error?r.data:null,u=rawgArtUrl(d);
+    if(u){rawgArtCache[job.key]={url:u};saveRawgArtCache();insertExternalImageForTitle(job.key,u,job.title);if(job.gid&&d)rawgCachePut(job.gid,d)}
+    else if(d&&d.found===false){rawgArtCache[job.key]={notFound:true};saveRawgArtCache()}
+  }).catch(function(){})
+  .then(function(){rawgArtBusy=false;setTimeout(processRawgArtQueue,300)});
+}
 function steamAfterWiki(el,title,key){
   var c=steamLookupCache[key];
-  if(c){if(c.id)insertSteamImageForTitle(key,c.id,c.tiny||"");return}
+  if(c){if(c.id)insertSteamImageForTitle(key,c.id,c.tiny||"");else queueRawgLookup(el,title,key);return}
   if(steamLookupAttempted[key])return;
   steamLookupAttempted[key]=true;
   steamLookupQueue.push({cover:el,title:title,key:key});processSteamLookupQueue();
@@ -2003,7 +2039,7 @@ function queueSteamLookup(coverEl){
     return;
   }
   var wikiCached=wikiLookupCache[key];
-  if(wikiCached){if(wikiCached.url)insertExternalImageForTitle(key,wikiCached.url,title);return}
+  if(wikiCached){if(wikiCached.url)insertExternalImageForTitle(key,wikiCached.url,title);else steamAfterWiki(coverEl,title,key);return}
   if(steamLookupAttempted[key])return;
   steamLookupAttempted[key]=true;
   steamLookupQueue.push({cover:coverEl,title:title,key:key});
