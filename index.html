@@ -648,6 +648,24 @@ window.addEventListener("hashchange",sync);window.addEventListener("load",sync);
 @media(max-width:360px){.bnav a,.bnav button{font-size:.58rem}}
 </style>
 <script>
+/* =====================================================================
+   GAMEBOXD – SUPABASE SETTINGS  (edit ONLY these lines)
+   url  : Project URL         (Supabase → Project Settings → API)
+   key  : PUBLISHABLE key     (starts with sb_publishable_…  — or the legacy "anon" key)
+          NEVER put a service_role / secret key here. It would be public.
+   emailDomain   : internal domain used to turn "username" into the e-mail
+                   Supabase Auth needs. Nobody receives mail there.
+   defaultPublic : false = new accounts start private (original behaviour)
+   ===================================================================== */
+window.GBX_CONFIG={
+  url:"PASTE_PROJECT_URL_HERE",
+  key:"PASTE_PUBLISHABLE_KEY_HERE",
+  emailDomain:"gameboxd.app",
+  defaultPublic:false
+};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.min.js"></script>
+<script>
 (function(){
 "use strict";
 var GAMES=[
@@ -1768,10 +1786,12 @@ var MONTHS=["January","February","March","April","May","June","July","August","S
 var state={logs:{},custom:[],public:false,following:[],lists:[],favs:[],username:"",email:"",salt:"",hash:"",profile:{}};
 var ui={gid:"",lo:"me",lid:"",tab:"kesf",genre:"",sort:"year",profileSort:"year",bf:{tag:"",decade:"",plat:"",hide:false,open:""},pf:{tag:"",status:"",rmin:0,rmax:0,pend:false,norate:false,decade:"",genre:"",plat:"",hide:false,open:""},searchType:"games",q:"",homeQ:"",homeGenre:"",profile:null,psq:"",hits:null,globalHits:null};
 var editing=null; // {game, isNew, pendingCustom}
-var store=null, chain=Promise.resolve();
-var db=null, userApi=null, myId=null, pubExists=false;
+var chain=Promise.resolve();
+var db=null, userApi=null, myId=null;            /* db/userApi are set only while a Supabase session is active */
 var people=null, profs={}, loaded=false;
-var signedIn=(function(){try{return localStorage.getItem("gameboxd_out")!=="1"}catch(e){return true}})();
+var follows=[];                                  /* rows of the follows table: {a:followerId, b:followingId} */
+var peopleAt=0, cmAt=0, lastPub="";
+var signedIn=false;
 
 /* ---------- helpers ---------- */
 function $(s,r){return (r||document).querySelector(s)}
@@ -2036,53 +2056,152 @@ function normalize(d){
   }
   return s;
 }
-/* the public copy: finished/played games only, no examples, no wishlist */
+/* ---------- Supabase backend ----------
+   auth.users   : username + password (username is turned into an internal e-mail)
+   user_data    : PRIVATE full copy of your state (owner-only RLS)      -> user_data.data
+   profiles     : PUBLIC copy (username/avatar always; games, reviews, lists only when shared) -> profiles.data
+   follows      : who follows whom                                      -> follows rows
+   comments     : comments on reviews                                   -> comments rows               */
+var CFG=window.GBX_CONFIG||{}, sb=null, sbError="";
+var T={userData:"user_data",profiles:"profiles",follows:"follows",comments:"comments"};
+/* column names – change here only if your tables use different names */
+var C={userData:{id:"id",data:"data"},profiles:{id:"id",data:"data"},
+  follows:{follower:"follower_id",following:"following_id"},
+  comments:{id:"id",owner:"owner_id",game:"game_id",author:"author_id",text:"body",ts:"created_at"}};
+function jwtRole(k){try{var p=k.split(".")[1].replace(/-/g,"+").replace(/_/g,"/");return JSON.parse(atob(p)).role}catch(e){return ""}}
+(function(){
+  try{
+    var u=String(CFG.url||"").trim().replace(/\/+$/,""), k=String(CFG.key||"").trim();
+    if(!/^https:\/\/[a-z0-9.-]+$/i.test(u)||!k||/PASTE_/.test(u+k)){sbError="Supabase isn’t configured yet: add the Project URL and publishable key at the top of index.html.";return}
+    if(/^sb_secret_/.test(k)||jwtRole(k)==="service_role"){sbError="A secret/service_role key was found in index.html. Remove it and use the publishable key.";return}
+    if(!window.supabase||!window.supabase.createClient){sbError="The Supabase library couldn’t be loaded. Check your connection and reload.";return}
+    sb=window.supabase.createClient(u,k,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false,storageKey:"gameboxd-auth"}});
+  }catch(e){sb=null;sbError="Couldn’t start Supabase.";try{console.error("[Gameboxd]",e)}catch(x){}}
+})();
+function logErr(where,e){try{console.error("[Gameboxd] "+where,e)}catch(x){}}
+function errTxt(e){var c=e&&(e.code||e.message);return c?String(c).slice(0,60):"error"}
+function asObj(v){if(typeof v==="string"){try{v=JSON.parse(v)}catch(e){return null}}return v&&typeof v==="object"?v:null}
+function emailFor(name){return String(name).toLowerCase()+"@"+String(CFG.emailDomain||"gameboxd.app")}
+function peopleStale(ms){return Date.now()-peopleAt>(ms||60000)}
+function cmStale(){return Date.now()-cmAt>60000}
+
+/* your private copy: no passwords, and "following" lives in the follows table */
+function privateDoc(){
+  var d=JSON.parse(JSON.stringify(state));
+  delete d.following;delete d.email;delete d.salt;delete d.hash;
+  return d;
+}
+/* the public copy: username + avatar always; finished/played games only when you chose to share (no examples, no wishlist) */
 function publicDoc(){
+  var pr=state.profile||{}, out={username:state.username||"",public:!!state.public,profile:{}}, av=okAv(pr.avatar);
+  if(!state.public){if(av)out.profile.avatar=av;return out}
   var logs={}, used={}, favs=myFavs().map(function(g){return g.id});
   Object.keys(state.logs).forEach(function(k){var l=state.logs[k];if(!l.sample&&l.status!=="wish"){logs[k]=l;used[k]=1}});
   var pl=myLists().filter(function(l){return l.pub});
   pl.forEach(function(l){l.games.forEach(function(k){used[k]=1})});
   favs.forEach(function(k){used[k]=1});
-  return {logs:logs,custom:state.custom.filter(function(c){return used[c.id]}),following:followingList().slice(),favs:favs,lists:pl,username:state.username||"",profile:state.profile||{}};
+  out.logs=logs;out.custom=state.custom.filter(function(c){return used[c.id]});out.favs=favs;out.lists=pl;out.profile=pr;
+  return JSON.parse(JSON.stringify(out));
+}
+function writeDoc(key,doc){
+  var row={};row[C[key].id]=myId;row[C[key].data]=doc;
+  return sb.from(T[key]).upsert(row,{onConflict:C[key].id}).then(function(r){if(r&&r.error)throw r.error;return r});
 }
 function syncPublic(){
-  if(!db||!myId)return;
-  if(state.public){
-    var data=JSON.parse(JSON.stringify(publicDoc()));
-    chain=chain.then(function(){return db.doc("profiles/"+myId).set(data)}).then(function(){pubExists=true}).catch(function(){toast("Profile couldn’t be updated. You may not have write access.")});
-  }else if(pubExists){
-    chain=chain.then(function(){return db.doc("profiles/"+myId).delete()}).then(function(){pubExists=false}).catch(function(){});
-  }
+  if(!sb||!myId)return;
+  var doc=publicDoc(), str=JSON.stringify(doc);
+  if(str===lastPub)return;
+  chain=chain.then(function(){return writeDoc("profiles",doc)}).then(function(){lastPub=str}).catch(function(e){logErr("profile sync",e);toast("Profile couldn’t be updated ("+errTxt(e)+")")});
 }
 function save(){
-  var snap=JSON.stringify(state);
-  try{localStorage.setItem("gameboxd",snap)}catch(e){}
-  if(store){
-    var data=JSON.parse(snap);
-    chain=chain.then(function(){return store.set(data)}).catch(function(){toast("Couldn’t save. Try again.")});
-  }
+  if(!sb||!myId)return;
+  var doc=privateDoc();
+  chain=chain.then(function(){return writeDoc("userData",doc)}).catch(function(e){logErr("save",e);toast("Couldn’t save ("+errTxt(e)+"). Try again.")});
   syncPublic();
+}
+async function persistNow(){
+  var pd=publicDoc();
+  await writeDoc("userData",privateDoc());
+  await writeDoc("profiles",pd);
+  lastPub=JSON.stringify(pd);
+}
+async function loadMyFollows(){
+  var F=C.follows, q=await sb.from(T.follows).select(F.following).eq(F.follower,myId).limit(5000);
+  if(q.error)throw q.error;
+  state.following=(q.data||[]).map(function(r){return r[F.following]}).filter(function(x){return typeof x==="string"});
+}
+/* loads (or creates) the signed-in user's state. Returns true when this account had no data yet. */
+async function bootUser(user,opts){
+  opts=opts||{};
+  var md=user.user_metadata||{};
+  var uname=String(typeof md.username==="string"&&md.username?md.username:String(user.email||"").split("@")[0]).replace(/[^A-Za-z0-9_]/g,"").slice(0,20);
+  var r=await sb.from(T.userData).select(C.userData.data).eq(C.userData.id,user.id).maybeSingle();
+  if(r.error)throw r.error;
+  var fresh=!r.data, raw=r.data?asObj(r.data[C.userData.data]):null;
+  myId=user.id;
+  state=normalize(raw||{});state.following=[];
+  if(!state.username)state.username=uname;
+  if(fresh){
+    state.public=!!CFG.defaultPublic;
+    if(opts.legacy){var L=normalize(opts.legacy);state.logs=L.logs;state.custom=L.custom;state.lists=L.lists;state.favs=L.favs;state.profile=L.profile;state.public=L.public||state.public}
+  }
+  db=sb;userApi=makeUserApi();signedIn=true;loaded=true;
+  people=null;cm=null;peopleAt=0;cmAt=0;profs={};follows=[];lastPub="";ui.hits=null;ui.globalHits=null;
+  try{await loadMyFollows()}catch(e){logErr("follows",e)}
+  if(!opts.isNew){if(fresh)save();else syncPublic()}
+  return fresh;
+}
+function resetSession(){
+  myId=null;db=null;userApi=null;signedIn=false;loaded=true;
+  state=normalize({});people=null;cm=null;peopleAt=0;cmAt=0;profs={};follows=[];lastPub="";
+  ui.hits=null;ui.globalHits=null;ui.profile=null;
+}
+async function doLogout(){
+  try{await chain}catch(e){}
+  try{if(sb)await sb.auth.signOut({scope:"local"})}catch(e){logErr("sign out",e)}
+  resetSession();ui.auth="login";render();window.scrollTo(0,0);toast("You’ve signed out");
 }
 async function initStore(){
   try{
-    if(window.claude&&window.claude.use){
-      var user=await window.claude.use("user"), d=await window.claude.use("db");
-      if(user&&d){
-        var uid=await user.id();
-        if(uid){
-          db=d;userApi=user;myId=uid;
-          store=db.collection("data/users/"+uid).doc("gameboxd");
-          try{var ps=await db.doc("profiles/"+uid).get();pubExists=ps.exists}catch(e){}
-          try{var me=await user.profiles([uid]);if(me&&me[uid])profs[uid]=me[uid]}catch(e){}
-          var snap=await store.get();
-          if(snap.exists){state=normalize(snap.data());loaded=true;render();return}
-        }
+    if(sb){
+      var gs=await sb.auth.getSession(), sess=gs&&gs.data&&gs.data.session;
+      if(sess&&sess.user){
+        try{await bootUser(sess.user)}catch(e){logErr("restore session",e);resetSession();toast("Couldn’t load your account ("+errTxt(e)+")")}
       }
+      sb.auth.onAuthStateChange(function(ev){if(ev==="SIGNED_OUT"&&myId){resetSession();ui.auth="login";render()}});
     }
-  }catch(e){store=null}
-  try{var raw=localStorage.getItem("gameboxd");if(raw)state=normalize(JSON.parse(raw))}catch(e){}
-  if(store&&(Object.keys(state.logs).length||state.custom.length))save();
+  }catch(e){logErr("init",e)}
   loaded=true;render();
+}
+/* what we accept from OTHER members' public docs: everything is re-validated before it reaches the page */
+function cleanCustom(a){
+  if(!Array.isArray(a))return [];
+  return a.slice(0,500).filter(function(c){return c&&typeof c.id==="string"&&typeof c.t==="string"&&/^[A-Za-z0-9_-]{1,40}$/.test(c.id)&&!(c.id in COVER_ART)&&!(c.id in STEAM_APP_IDS)}).map(function(c){
+    var y=parseInt(c.y,10);
+    return {id:c.id,t:c.t.slice(0,80),y:(y>=1950&&y<=2100)?y:"",d:typeof c.d==="string"?c.d.slice(0,60):"",g:GENRES.indexOf(c.g)>=0?c.g:"Other",custom:true};
+  });
+}
+function cleanPublic(d){
+  d=asObj(d)||{};
+  var n=normalize(d), logs={}, src=(d.logs&&typeof d.logs==="object")?d.logs:{};
+  Object.keys(src).slice(0,3000).forEach(function(k){var l=src[k];if(l&&typeof l==="object"&&k.length<=60)logs[k]=cleanLog(l)});
+  return {logs:logs,custom:cleanCustom(d.custom),favs:n.favs,lists:n.lists,profile:n.profile,public:d.public===true,
+    username:/^[A-Za-z0-9_]{1,20}$/.test(n.username)?n.username:""};
+}
+function makeUserApi(){
+  return {
+    search:async function(q){
+      if(people===null||peopleStale(10000))await loadPeople();
+      var s=String(q||"").trim().toLowerCase();
+      var list=(people||[]).filter(function(p){
+        if(!p.data||!p.data.public||p.id===myId)return false;
+        return !s||personName(p.id).toLowerCase().indexOf(s)>=0||String((p.data.profile||{}).name||"").toLowerCase().indexOf(s)>=0;
+      });
+      list.sort(function(a,b){return followersOf(b.id)-followersOf(a.id)||personName(a.id).localeCompare(personName(b.id))});
+      return list.slice(0,30).map(function(p){return {id:p.id,name:personName(p.id)}});
+    },
+    profiles:async function(){return {}}
+  };
 }
 
 /* ---------- views ---------- */
@@ -2172,22 +2291,38 @@ function avatar(id,cls){var u=avSrc(id);return u?'<img'+(cls?' class="'+cls+'"':
 function followersOf(id){return followersList(id).length}
 async function loadPeople(){
   try{await ready}catch(e){}
+  try{await chain}catch(e){}
   if(!db){people=[];render();return}
   try{
-    var snap=await db.collection("profiles").get();
-    people=snap.docs.map(function(d){return {id:d.id,data:d.data()}});
-    if(userApi){var ps=await userApi.profiles(people.map(function(p){return p.id}));profs=ps||{}}
-  }catch(e){people=[]}
+    var P=C.profiles, F=C.follows;
+    var pr=await sb.from(T.profiles).select(P.id+","+P.data).limit(1000);
+    if(pr.error)throw pr.error;
+    var fr=await sb.from(T.follows).select(F.follower+","+F.following).limit(10000);
+    if(fr.error)throw fr.error;
+    people=(pr.data||[]).filter(function(r){return typeof r[P.id]==="string"}).map(function(r){return {id:r[P.id],data:cleanPublic(r[P.data])}});
+    follows=(fr.data||[]).map(function(r){return {a:r[F.follower],b:r[F.following]}}).filter(function(f){return typeof f.a==="string"&&typeof f.b==="string"});
+    state.following=follows.filter(function(f){return f.a===myId}).map(function(f){return f.b});
+    peopleAt=Date.now();
+  }catch(e){logErr("load members",e);people=[];peopleAt=Date.now();toast("Couldn’t load members ("+errTxt(e)+")")}
   render();
 }
 function followingList(){return Array.isArray(state.following)?state.following:[]}
+function setFollowLocal(id,on){
+  var fl=followingList().filter(function(x){return x!==id});if(on)fl.push(id);state.following=fl;
+  follows=follows.filter(function(f){return !(f.a===myId&&f.b===id)});if(on)follows.push({a:myId,b:id});
+}
+async function followRemote(id,on){
+  var F=C.follows, r;
+  if(on){var row={};row[F.follower]=myId;row[F.following]=id;r=await sb.from(T.follows).insert(row);if(r.error&&String(r.error.code)!=="23505")throw r.error}
+  else{r=await sb.from(T.follows).delete().eq(F.follower,myId).eq(F.following,id);if(r.error)throw r.error}
+}
 function isFollowing(id){return followingList().indexOf(id)>=0}
 function followBtn(id){var on=isFollowing(id);return '<button class="chip" data-follow="'+esc(id)+'" aria-pressed="'+on+'">'+(on?"Following":"Follow")+'</button>'}
 function findPerson(id){var r=null;(people||[]).forEach(function(x){if(x.id===id)r=x});return r}
 function hitsHtml(){
   if(ui.hits==null)return "";
   var head='<p class="label" style="margin:14px 0 8px">'+(ui.psq.trim()?"Search results":"Suggested")+'</p>';
-  if(!ui.hits.length)return head+'<p style="color:var(--mute);margin:0">No one found. Search only shows people who have access to this page.</p>';
+  if(!ui.hits.length)return head+'<p style="color:var(--mute);margin:0">No one found. Search only shows members who share their profile.</p>';
   return head+ui.hits.map(function(h){return '<div class="hit"><button class="who pmain" data-profile="'+esc(h.id)+'" style="flex-direction:row;align-items:center;gap:12px">'+avatar(h.id)+'<b>'+esc(h.name||"Gameboxd member")+'</b></button>'+followBtn(h.id)+'</div>'}).join("");
 }
 function paintHits(){var el=$("#presults");if(el)el.innerHTML=hitsHtml()}
@@ -2224,7 +2359,15 @@ function viewPeople(){
 }
 function followersList(id){
   if(!id)return [];
-  return (people||[]).filter(function(p){return p.id!==id&&p.data&&Array.isArray(p.data.following)&&p.data.following.indexOf(id)>=0}).map(function(p){return p.id});
+  var seen={},out=[];
+  follows.forEach(function(f){if(f.b===id&&f.a!==id&&!seen[f.a]){seen[f.a]=1;out.push(f.a)}});
+  return out;
+}
+function followingOf(id){
+  if(id===myId)return followingList();
+  var seen={},out=[];
+  follows.forEach(function(f){if(f.a===id&&f.b!==id&&!seen[f.b]){seen[f.b]=1;out.push(f.b)}});
+  return out;
 }
 function viewUserSearch(){
   var q=ui.q.trim(),out='<div class="intro"><div><h1>Search users</h1><p>Find Gameboxd members by username and follow their profiles.</p></div></div>';
@@ -2499,11 +2642,11 @@ function viewProfile(){
   var p=findPerson(ui.profile);
   var back='<button class="back" data-go="insanlar">← Members</button>';
   var fb=ui.profile&&ui.profile!==myId?followBtn(ui.profile):"";
-  if(!p)return back+'<div class="ph">'+avatar(ui.profile,"av")+'<h1>'+esc(personName(ui.profile))+'</h1><span class="fb">'+fb+'</span></div><div class="empty"><h3>Profile not shared</h3><p>This person hasn’t shared their profile yet. Follow them and you’ll see it here once they do.</p></div>';
+  if(!p||!p.data.public)return back+'<div class="ph">'+avatar(ui.profile,"av")+'<h1>'+esc(personName(ui.profile))+'</h1><span class="fb">'+fb+'</span></div><div class="empty"><h3>Profile not shared</h3><p>This person hasn’t shared their profile yet. Follow them and you’ll see it here once they do.</p></div>';
   var es=entriesOf(p.data).filter(function(e){return e.l.status!=="wish"});
   var a=avg(es), top=topOf(es,4);
   var fids=Array.isArray(p.data.favs)?p.data.favs:[], fgs=entriesFavs(p.data,fids);
-  var fing=Array.isArray(p.data.following)?p.data.following.length:0;
+  var fing=followingOf(p.id).length;
   var stats='<div><b>'+es.length+'</b><span>Games</span></div><div><b>'+(a?a.toFixed(1):"–")+'</b><span>Avg</span></div><div><b>'+fing+'</b><span>Following</span></div><div><b>'+followersOf(p.id)+'</b><span>Followers</span></div>';
   var out=back+'<div class="ph">'+avatar(p.id,"av")+'<div class="pinfo"><div class="pname"><h1>'+esc(personName(p.id))+'</h1><span class="fb">'+fb+'</span></div>'+profMeta(p.data.profile)+'</div><div class="pstats">'+stats+'</div></div>';
   if(fgs.length)out+='<div class="sec"><h2>Favorite games</h2></div><div class="favs">'+fgs.map(function(g){return gameCard(g,(p.data.logs&&p.data.logs[g.id])||null,true)}).join("")+'</div>';
@@ -2557,26 +2700,7 @@ function viewStats(){
 
 /* ---------- accounts ---------- */
 async function sha(t){var b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(t));return Array.from(new Uint8Array(b)).map(function(x){return x.toString(16).padStart(2,"0")}).join("")}
-async function claim(path,data){
-  var ref=db.doc(path), l=await ref.acquire({holder:myId,ttlMs:5000});
-  if(!l.acquired)return "busy";
-  var sn=await ref.get(), c=sn.exists?sn.data():null;
-  if(c&&c.uid&&c.uid!==myId)return "taken";
-  await ref.set(Object.assign({uid:myId},data));return "ok";
-}
-/* claims the username with its password hash; returns an error text, or "" after saving */
-async function setCreds(pw,uname){
-  if(pw.length<6)return "Password must be at least 6 characters.";
-  var salt=Array.from(crypto.getRandomValues(new Uint8Array(16))).map(function(x){return x.toString(16).padStart(2,"0")}).join("");
-  var hash=await sha(salt+pw);
-  if(db&&myId){
-    var r=await claim("usernames/"+uname.toLowerCase(),{name:uname,salt:salt,hash:hash});
-    if(r==="taken")return "That name is already taken. Choose another.";
-    if(r==="busy")return "Someone is claiming that name right now. Try again in a moment.";
-  }
-  state.salt=salt;state.hash=hash;return "";
-}
-function authFoot(){return db?"":'<p class="foot" style="margin:0">In this view your account is stored only in this browser and name uniqueness can’t be checked. When you open the page signed in, your name is protected from others.</p>'}
+function authFoot(){return sb?"":'<p class="foot" style="margin:0"><span class="err" role="alert">'+esc(sbError)+'</span></p>'}
 function viewSignup(){
   return '<div class="signup"><h1>Create account</h1><p>Choose the username people will know you by on Gameboxd. Each name belongs to one person. The password lets you sign back in later.</p><form id="signup" novalidate><div class="field"><label class="label" for="su-name">Username</label><input id="su-name" type="text" maxlength="20" autocomplete="username" autocapitalize="off" spellcheck="false" placeholder="Murad34" required><span class="hint">3–20 characters: letters, numbers and _</span></div><div class="field"><label class="label" for="su-pw">Password</label><input id="su-pw" type="password" autocomplete="new-password" placeholder="At least 6 characters" required></div><span class="err" id="su-err" role="alert"></span><button class="btn" id="su-btn" type="submit">Create account</button></form><p>Already have an account? <button class="linkbtn" data-auth="login">Sign in</button></p>'+authFoot()+'</div>';
 }
@@ -2584,44 +2708,70 @@ function viewLogin(has){
   return '<div class="signup"><h1>Sign in</h1><p>'+(has?"You’ve signed out. Enter your username and password to continue.":"Sign in with the username and password you chose when you created your account.")+'</p><form id="login" novalidate><div class="field"><label class="label" for="li-user">Username</label><input id="li-user" type="text" maxlength="20" autocomplete="username" autocapitalize="off" spellcheck="false" required></div><div class="field"><label class="label" for="li-pw">Password</label><input id="li-pw" type="password" autocomplete="current-password" required></div><span class="err" id="li-err" role="alert"></span><button class="btn" id="li-btn" type="submit">Sign in</button></form>'+(has?"":'<p>Don’t have an account? <button class="linkbtn" data-auth="signup">Create account</button></p>')+authFoot()+'</div>';
 }
 function goHome(){ui.tab="ana";if(location.hash!=="#ana")location.hash="#ana";else enter()}
+function authMsg(e,kind){
+  var m=((e&&e.code)||"")+" "+((e&&e.message)||""); m=m.toLowerCase();
+  if(/invalid login|invalid_credentials|invalid credentials/.test(m))return "Wrong username or password.";
+  if(/email not confirmed|email_not_confirmed/.test(m))return "This account needs e-mail confirmation. Turn off “Confirm email” in Supabase Auth settings.";
+  if(/already|registered|exists/.test(m))return "That name is already taken. Choose another.";
+  if(/email_address_invalid|email address.*invalid/.test(m))return "Sign-up was refused: Supabase rejected the internal e-mail domain. Change “emailDomain” at the top of index.html.";
+  if(/rate limit|too many|over_request|over_email/.test(m))return "Too many attempts. Wait a minute and try again.";
+  if(/weak_password|weak password/.test(m))return "That password is too weak. Try a longer one.";
+  if(/failed to fetch|networkerror|network request/.test(m))return "Can’t reach the server. Check your connection and try again.";
+  return (kind==="signup"?"Couldn’t create the account":"Couldn’t sign in")+" ("+errTxt(e)+").";
+}
+/* old browser-only data (localStorage "gameboxd") is moved into the new account once, if it belongs to the same username */
+function readLegacy(name){
+  try{
+    var raw=localStorage.getItem("gameboxd");if(!raw)return null;
+    var d=JSON.parse(raw);if(!d||typeof d!=="object")return null;
+    var u=typeof d.username==="string"?d.username:"";
+    if(u&&u.toLowerCase()!==name.toLowerCase())return null;
+    if(!d.logs&&!d.lists&&!d.favs)return null;
+    return d;
+  }catch(e){return null}
+}
+function archiveLegacy(){try{var raw=localStorage.getItem("gameboxd");if(raw){localStorage.setItem("gameboxd_imported_backup",raw);localStorage.removeItem("gameboxd")}}catch(e){}}
 async function doSignup(){
-  var err=$("#su-err"), btn=$("#su-btn"), name=$("#su-name").value.trim(), pw=$("#su-pw").value;
+  var err=$("#su-err"), btn=$("#su-btn"), name=$("#su-name").value.trim(), pw=$("#su-pw").value, created=false;
   err.textContent="";
+  if(!sb){err.textContent=sbError;return}
   if(!/^[A-Za-z0-9_]{3,20}$/.test(name)){err.textContent="Name must be 3–20 characters: letters, numbers and _ only.";return}
+  if(pw.length<6){err.textContent="Password must be at least 6 characters.";return}
   btn.disabled=true;
   try{
-    var m=await setCreds(pw,name);
-    if(m){err.textContent=m;btn.disabled=false;return}
-    state.username=name;signedIn=true;try{localStorage.removeItem("gameboxd_out")}catch(e){}
-    save();toast("Account created. Welcome, "+name);goHome();
-  }catch(e){err.textContent="Couldn’t create the account. Try again in a moment.";btn.disabled=false}
+    var r=await sb.auth.signUp({email:emailFor(name),password:pw,options:{data:{username:name}}});
+    if(r.error){err.textContent=authMsg(r.error,"signup");btn.disabled=false;return}
+    var u=r.data&&r.data.user;
+    if(!u||(Array.isArray(u.identities)&&!u.identities.length)){err.textContent="That name is already taken. Choose another.";btn.disabled=false;return}
+    if(!r.data.session){err.textContent="Supabase is asking for e-mail confirmation. Turn off “Confirm email” (Authentication → Sign In / Providers → Email).";btn.disabled=false;return}
+    created=true;
+    var legacy=readLegacy(name);
+    await bootUser(u,{isNew:true,legacy:legacy});
+    state.username=name;
+    await persistNow();
+    if(legacy)archiveLegacy();
+    toast(legacy?"Account created. Your saved games were imported.":"Account created. Welcome, "+name);
+    goHome();
+  }catch(e){
+    logErr("sign up",e);
+    if(created){try{await sb.auth.signOut({scope:"local"})}catch(x){}resetSession();ui.auth="login";render();
+      var er2=$("#li-err");if(er2)er2.textContent="Your account was created, but saving your profile failed ("+errTxt(e)+"). Try signing in.";return}
+    err.textContent=authMsg(e,"signup");btn.disabled=false;
+  }
 }
 async function doLogin(){
   var err=$("#li-err"), btn=$("#li-btn"), un=$("#li-user").value.trim(), pw=$("#li-pw").value;
   err.textContent="";
+  if(!sb){err.textContent=sbError;return}
   if(!un||!pw){err.textContent="Enter your username and password.";return}
+  if(!/^[A-Za-z0-9_]{3,20}$/.test(un)){err.textContent="Wrong username or password.";return}
   btn.disabled=true;
   try{
-    var lc=un.toLowerCase(), ok=false, acc=null;
-    if(state.username&&!state.hash&&state.username.toLowerCase()===lc){
-      var m=await setCreds(pw,state.username);
-      if(m){err.textContent=m;btn.disabled=false;return}
-      ok=true;save();toast("Password set");
-    }else if(state.username&&state.hash){
-      ok=state.username.toLowerCase()===lc&&(await sha(state.salt+pw))===state.hash;
-      if(ok&&db&&myId)await db.doc("usernames/"+lc).set({uid:myId,name:state.username,salt:state.salt,hash:state.hash});
-    }else if(db){
-      var sn=await db.doc("usernames/"+lc).get();acc=sn.exists?sn.data():null;
-      ok=!!acc&&typeof acc.salt==="string"&&(await sha(acc.salt+pw))===acc.hash;
-    }
-    if(!ok){err.textContent="Wrong username or password.";btn.disabled=false;return}
-    if(acc){
-      state.username=String(acc.name||un).slice(0,20);state.salt=acc.salt;state.hash=acc.hash;
-      await db.doc("usernames/"+lc).update({uid:myId});save();
-    }
-    signedIn=true;try{localStorage.removeItem("gameboxd_out")}catch(e){}
-    toast("Welcome, "+state.username);render();goHome();
-  }catch(e){err.textContent="Couldn’t sign in. Try again in a moment.";btn.disabled=false}
+    var r=await sb.auth.signInWithPassword({email:emailFor(un),password:pw});
+    if(r.error){err.textContent=authMsg(r.error,"login");btn.disabled=false;return}
+    try{await bootUser(r.data.user)}catch(e){try{await sb.auth.signOut({scope:"local"})}catch(x){}resetSession();throw e}
+    toast("Welcome, "+state.username);goHome();
+  }catch(e){logErr("sign in",e);err.textContent=authMsg(e,"login");btn.disabled=false}
 }
 
 /* ---------- edit profile ---------- */
@@ -2638,7 +2788,7 @@ var epd=$("#epd");
 function openEdit(){
   var pr=state.profile||{};
   $("#e-user").value=state.username;$("#e-name").value=pr.name||"";$("#e-loc").value=pr.loc||"";$("#e-web").value=pr.web||"";$("#e-bio").value=pr.bio||"";
-  $("#e-pw").value="";$("#e-pwf").hidden=!!state.hash;
+  $("#e-pw").value="";$("#e-pwf").hidden=true;
   $("#e-pub").checked=!!state.public;$("#e-pubw").hidden=!db;$("#e-err").textContent="";
   pendAv=undefined;$("#e-file").value="";showAvPrev(okAv(pr.avatar));
   if(epd.showModal)epd.showModal();else epd.setAttribute("open","");
@@ -2663,12 +2813,6 @@ $("#eform").addEventListener("submit",async function(e){
   var er=$("#e-err");er.textContent="";
   var pr={name:$("#e-name").value.trim(),loc:$("#e-loc").value.trim(),web:$("#e-web").value.trim(),bio:$("#e-bio").value.trim()};
   if(pr.web&&!/^https?:\/\//i.test(pr.web))pr.web="https://"+pr.web;
-  try{
-    if(!state.hash){
-      var pw=$("#e-pw").value;
-      if(pw){var m=await setCreds(pw,state.username);if(m){er.textContent=m;return}}
-    }
-  }catch(x){er.textContent="Couldn’t save. Try again.";return}
   var av=pendAv===undefined?okAv((state.profile||{}).avatar):pendAv;if(av)pr.avatar=av;
   state.profile=pr;
   var pub=db?$("#e-pub").checked:state.public, ch=pub!==state.public;
@@ -2871,10 +3015,19 @@ function render(){
 
 /* ---------- comments, lists, activity ---------- */
 var cm=null;
+function fromCommentRow(r){
+  var K=C.comments;
+  return {id:String(r[K.id]),to:r[K.owner],game:r[K.game],by:r[K.author],text:String(r[K.text]==null?"":r[K.text]).slice(0,400),ts:Date.parse(r[K.ts])||Date.now()};
+}
 async function loadComments(){
   try{await ready}catch(e){}
   if(!db){cm=[];render();return}
-  try{var s=await db.collection("comments").get();cm=s.docs.map(function(d){var x=d.data();x.id=d.id;return x})}catch(e){cm=[]}
+  try{
+    var q=await sb.from(T.comments).select("*").limit(2000);
+    if(q.error)throw q.error;
+    cm=(q.data||[]).map(fromCommentRow).filter(function(c){return typeof c.to==="string"&&typeof c.by==="string"&&typeof c.game==="string"}).sort(function(a,b){return a.ts-b.ts});
+    cmAt=Date.now();
+  }catch(e){logErr("load comments",e);cm=[]}
   render();
 }
 function cmOf(owner,gid){return (cm||[]).filter(function(c){return c.to===owner&&c.game===gid}).sort(function(a,b){return a.ts-b.ts})}
@@ -2893,10 +3046,23 @@ function revBlock(owner,e,mine){
 async function postComment(f){
   var inp=f.querySelector("input"), t=inp.value.trim();
   if(!t||!db||!myId)return;
-  var o={to:f.dataset.to,game:f.dataset.game,by:myId,text:t.slice(0,400),ts:Date.now()};
+  var K=C.comments, row={};
+  row[K.owner]=f.dataset.to;row[K.game]=f.dataset.game;row[K.author]=myId;row[K.text]=t.slice(0,400);
   inp.disabled=true;
-  try{var r=await db.collection("comments").add(o);o.id=r.id;(cm=cm||[]).push(o);render()}
-  catch(e){inp.disabled=false;toast("Couldn’t post your comment. Try again.")}
+  try{
+    var r=await sb.from(T.comments).insert(row).select();
+    if(r.error)throw r.error;
+    var rec=r.data&&r.data[0];
+    if(rec){(cm=cm||[]).push(fromCommentRow(rec));render()}else await loadComments();
+  }catch(e){logErr("post comment",e);inp.disabled=false;toast("Couldn’t post your comment ("+errTxt(e)+")")}
+}
+async function deleteComment(cid){
+  try{
+    var r=await sb.from(T.comments).delete().eq(C.comments.id,cid).select();
+    if(r.error)throw r.error;
+    if(!r.data||!r.data.length){toast("You can’t delete this comment.");return}
+    cm=(cm||[]).filter(function(c){return c.id!==cid});render();
+  }catch(e){logErr("delete comment",e);toast("Couldn’t delete the comment ("+errTxt(e)+")")}
 }
 function myLists(){return Array.isArray(state.lists)?state.lists:[]}
 function curList(){var r=null;myLists().forEach(function(x){if(x.id===ui.lid)r=x});return r}
@@ -3121,7 +3287,7 @@ document.addEventListener("click",function(e){
   else if(t.dataset.tagfilter){ui.bf.tag=t.dataset.tagfilter;ui.bf.open="";ui.genre="";ui.q="";$("#q").value="";ui.tab="kesf";if(location.hash==="#kesf")enter();else location.hash="#kesf"}
   else if(t.dataset.homeAll){ui.q=ui.homeQ||"";ui.genre=ui.homeGenre||"";ui.tab="kesf";if(location.hash==="#kesf")render();else location.hash="#kesf"}
   else if(t.dataset.log){openPick("log")}
-  else if(t.dataset.logout){if(!state.hash){toast("Set a password before signing out");openEdit();return}signedIn=false;try{localStorage.setItem("gameboxd_out","1")}catch(e){}ui.auth="login";render();window.scrollTo(0,0);toast("You’ve signed out")}
+  else if(t.dataset.logout){doLogout()}
   else if(t.dataset.editprofile){openEdit()}
   else if(t.dataset.auth){ui.auth=t.dataset.auth;render()}
   else if(t.dataset.pickgame){var pg=gameById(t.dataset.pickgame);closePick();if(pg)openEditor(pg,!state.logs[pg.id])}
@@ -3135,7 +3301,7 @@ document.addEventListener("click",function(e){
   else if(t.dataset.addtolistopen){openPick("list")}
   else if(t.dataset.addtolist){var L1=curList();if(L1&&L1.games.indexOf(t.dataset.addtolist)<0)L1.games.push(t.dataset.addtolist);save();paintPick();render()}
   else if(t.dataset.rmgame){var L2=curList();if(L2)L2.games=L2.games.filter(function(x){return x!==t.dataset.rmgame});save();render()}
-  else if(t.dataset.delcm){var cid=t.dataset.delcm;db.doc("comments/"+cid).delete().then(function(){cm=(cm||[]).filter(function(c){return c.id!==cid});render()}).catch(function(){toast("Couldn’t delete the comment.")})}
+  else if(t.dataset.delcm){deleteComment(t.dataset.delcm)}
   else if(t.dataset.pick){openPick("fav")}
   else if(t.dataset.addfav){
     if(state.favs.length<4&&state.favs.indexOf(t.dataset.addfav)<0)state.favs.push(t.dataset.addfav);
@@ -3143,9 +3309,11 @@ document.addEventListener("click",function(e){
   }
   else if(t.dataset.unfav){state.favs=state.favs.filter(function(x){return x!==t.dataset.unfav});save();render()}
   else if(t.dataset.follow){
-    var fid=t.dataset.follow, fl=followingList().slice(), fi=fl.indexOf(fid);
-    if(fi>=0)fl.splice(fi,1);else fl.push(fid);
-    state.following=fl;save();render();if(db){people=null;loadPeople()}
+    var fid=t.dataset.follow;
+    if(!db||!myId||fid===myId)return;
+    var fon=!isFollowing(fid);
+    setFollowLocal(fid,fon);render();
+    chain=chain.then(function(){return followRemote(fid,fon)}).catch(function(e){logErr("follow",e);setFollowLocal(fid,!fon);render();toast("Couldn’t update follow ("+errTxt(e)+")")});
   }
   else if(t.dataset.profile){ui.profile=t.dataset.profile;ui.tab="profil";render();window.scrollTo(0,0)}
   else if(t.dataset.togglepublic){
@@ -3222,8 +3390,8 @@ $("#q").addEventListener("input",function(e){
 });
 function enter(){
   render();
-  if(ui.tab==="activity"||ui.tab==="reyler"||ui.tab==="profilim"||ui.tab==="profil"||ui.tab==="list"||ui.tab==="game"){if(ui.tab==="activity")cm=null;if(cm===null)loadComments()}
-  if(ui.tab==="insanlar"||ui.tab==="ana"||ui.tab==="activity"||((isProfileTab(ui.tab)||ui.tab==="kesf"||ui.tab==="game")&&people===null))loadPeople();
+  if(ui.tab==="activity"||ui.tab==="reyler"||ui.tab==="profilim"||ui.tab==="profil"||ui.tab==="list"||ui.tab==="game"){if(ui.tab==="activity")cm=null;if(cm===null||cmStale())loadComments()}
+  if(ui.tab==="insanlar"||ui.tab==="ana"||ui.tab==="activity"||((isProfileTab(ui.tab)||ui.tab==="kesf"||ui.tab==="game")&&(people===null||peopleStale())))loadPeople();
   if(ui.tab==="usersearch"&&ui.searchType==="users"){clearTimeout(globalUserSearchTimer);globalUserSearchTimer=setTimeout(runGlobalUserSearch,100)}
 }
 function onHash(){
