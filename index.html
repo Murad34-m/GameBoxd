@@ -658,8 +658,8 @@ window.addEventListener("hashchange",sync);window.addEventListener("load",sync);
    defaultPublic : false = new accounts start private (original behaviour)
    ===================================================================== */
 window.GBX_CONFIG={
-  url:"PASTE_PROJECT_URL_HERE",
-  key:"PASTE_PUBLISHABLE_KEY_HERE",
+  url:"https://rfgfkclgihbrpbpnkutv.supabase.co/rest/v1",
+  key:"sb_publishable_D9FUFFkKb61kOuJ8YdRW3g_ZZNDRM8C",
   emailDomain:"gameboxd.app",
   defaultPublic:false
 };
@@ -2065,9 +2065,9 @@ function normalize(d){
 var CFG=window.GBX_CONFIG||{}, sb=null, sbError="";
 var T={userData:"user_data",profiles:"profiles",follows:"follows",comments:"comments"};
 /* column names – change here only if your tables use different names */
-var C={userData:{id:"id",data:"data"},profiles:{id:"id",data:"data"},
-  follows:{follower:"follower_id",following:"following_id"},
-  comments:{id:"id",owner:"owner_id",game:"game_id",author:"author_id",text:"body",ts:"created_at"}};
+var C={userData:{id:"user_id",data:"data"},profiles:{id:"id",data:"data"},
+  follows:{follower:"follower_id",following:"followee_id"},
+  comments:{id:"id",owner:"to_id",game:"game_id",author:"by_id",text:"body",ts:"created_at"}};
 function jwtRole(k){try{var p=k.split(".")[1].replace(/-/g,"+").replace(/_/g,"/");return JSON.parse(atob(p)).role}catch(e){return ""}}
 (function(){
   try{
