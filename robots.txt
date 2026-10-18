@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://murad34-m.github.io/GameBoxd/sitemap.xml
