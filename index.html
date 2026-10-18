@@ -45,6 +45,15 @@
 .fav-av img{width:100%;height:100%;object-fit:cover;display:block}
 .fav-av svg{width:70%;height:70%}
 @media(max-width:640px){.pf-sort{margin-left:0}}
+
+.rawg-banner{display:block;width:100%;max-height:300px;object-fit:cover;border-radius:10px;margin:0 0 18px}
+.rawg-desc{max-width:760px;margin:0 0 18px}
+.rawg-desc h3{margin:0 0 8px}
+.rawg-desc p{margin:0 0 10px;line-height:1.55}
+.rawg-desc summary{cursor:pointer;margin:4px 0 10px;font-weight:600}
+.rawg-shots{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;margin:0 0 14px}
+.rawg-shots img{width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:8px;display:block}
+.rawg-credit{margin:0 0 22px}
 </style><style>.spo{filter:blur(6px);cursor:pointer;user-select:none}
 :root[data-theme=light]{--bg:#f4f6f8;--panel:#fff;--panel2:#eef1f4;--line:#d8dee4;--fg:#2b3640;--head:#10161c;--mute:#5b6b7a;--accent-text:#0a7bb5;color-scheme:light}
 html[data-theme=light],:root[data-theme=light] body{background:#f4f6f8!important;color:#2b3640}
@@ -658,8 +667,8 @@ window.addEventListener("hashchange",sync);window.addEventListener("load",sync);
    defaultPublic : false = new accounts start private (original behaviour)
    ===================================================================== */
 window.GBX_CONFIG={
-  url:"https://rfgfkclgihbrpbpnkutv.supabase.co",
-  key:"sb_publishable_D9FUFFkKb61kOuJ8YdRW3g_ZZNDRM8C",
+  url:"PASTE_PROJECT_URL_HERE",
+  key:"PASTE_PUBLISHABLE_KEY_HERE",
   emailDomain:"gameboxd.app",
   defaultPublic:true
 };
@@ -2994,6 +3003,47 @@ function viewHome(){
   }).join('')+'</div></section>';
   return out;
 }
+/* ---------- RAWG: banner, description, screenshots (via Supabase Edge Function "rawg") ---------- */
+var RAWG_TTL=30*24*3600*1000, rawgMem={};
+function rawgCacheGet(id){
+  if(rawgMem[id])return rawgMem[id];
+  try{var s=localStorage.getItem("gbx-rawg:"+id);if(!s)return null;var o=JSON.parse(s);if(o&&o.t&&Date.now()-o.t<RAWG_TTL){rawgMem[id]=o.d;return o.d}}catch(e){}
+  return null;
+}
+function rawgCachePut(id,d){rawgMem[id]=d;try{localStorage.setItem("gbx-rawg:"+id,JSON.stringify({t:Date.now(),d:d}))}catch(e){}}
+function rawgHttps(u){return typeof u==="string"&&/^https:\/\/media\.rawg\.io\//.test(u)?u:""}
+function rawgHtml(d){
+  if(!d||!d.found)return "";
+  var ban=rawgHttps(d.banner)||rawgHttps(d.banner2), h="";
+  if(ban)h+='<img class="rawg-banner" src="'+esc(ban)+'" alt="" loading="lazy">';
+  var desc=String(d.description||"").trim();
+  if(desc){
+    var short=desc.length>600?desc.slice(0,600).replace(/\s+\S*$/,"")+"...":desc;
+    h+='<div class="rawg-desc"><h3>About</h3><p>'+esc(short).replace(/\n+/g,"</p><p>")+'</p>';
+    if(short!==desc)h+='<details><summary>Read more</summary><p>'+esc(desc).replace(/\n+/g,"</p><p>")+'</p></details>';
+    h+='</div>';
+  }
+  var shots=(d.shots||[]).map(rawgHttps).filter(Boolean).slice(0,6);
+  if(shots.length)h+='<div class="rawg-shots">'+shots.map(function(u){return '<img src="'+esc(u)+'" alt="" loading="lazy">'}).join("")+'</div>';
+  var url=/^https:\/\/rawg\.io\//.test(d.url||"")?d.url:"https://rawg.io";
+  h+='<p class="foot rawg-credit">Game data and images from <a href="'+esc(url)+'" target="_blank" rel="noopener">RAWG</a></p>';
+  return h;
+}
+async function setupRawg(){
+  var box=document.getElementById("rawg-box");if(!box)return;
+  var gid=box.dataset.gid, g=gameById(gid);if(!g)return;
+  var c=rawgCacheGet(gid);
+  if(c){box.innerHTML=rawgHtml(c);return}
+  if(!sb||!sb.functions)return;
+  try{
+    var r=await sb.functions.invoke("rawg",{body:{title:g.t}});
+    if(r.error||!r.data)return;
+    rawgCachePut(gid,r.data);
+    var b2=document.getElementById("rawg-box");
+    if(b2&&b2.dataset.gid===gid)b2.innerHTML=rawgHtml(r.data);
+  }catch(e){try{console.error("[Gameboxd] rawg",e)}catch(x){}}
+}
+
 function render(){
   var tab=ui.tab, v=$("#view");
   document.body.classList.toggle("nosign",!loaded||!state.username||!signedIn);
@@ -3010,6 +3060,7 @@ function render(){
   $("#u-av").innerHTML=avatar(myId||"me","uav");
   var sh=$("#m-share");sh.hidden=!db;sh.textContent=state.public?"Hide profile":"Share profile";
   setupSteamArt(v);
+  if(tab==="game")setupRawg();
 }
 
 
@@ -3251,6 +3302,7 @@ function viewGame(){
   out+='<div class="gd-big">'+(rated.length?'<b>'+av.toFixed(1)+'</b>'+stars(av*2)+'<span class="label">'+rated.length+' rating'+(rated.length===1?"":"s")+'</span>':'<span class="label">No ratings yet</span>')+'</div>';
   out+='<div class="gd-actions"><button class="btn" data-edit="'+esc(g.id)+'">'+(mine?"Edit my log":"+ Log this game")+'</button>'+(mine?'<span class="st '+esc(mine.status)+'">'+esc(statusLabel(mine.status))+'</span>'+(mine.rating?stars(mine.rating):"")+(mine.liked?' <span class="heart" aria-label="Liked">♥</span>':""):"")+'</div>';
     out+='</div></div>';
+  out+='<div id="rawg-box" data-gid="'+esc(g.id)+'"></div>';
   out+='<div class="tiles"><div class="tile"><b>'+(rated.length?av.toFixed(1):"–")+'</b><span class="label">Avg. rating</span></div><div class="tile"><b>'+rated.length+'</b><span class="label">Ratings</span></div><div class="tile"><b>'+rows.length+'</b><span class="label">Played by</span></div><div class="tile"><b>'+liked+'</b><span class="label">Likes</span></div></div>';
   function sbar(nm,n){return '<div class="hbar"><span class="nm" style="text-align:left;font:inherit;color:inherit">'+nm+'</span><span class="track"><span class="fill" style="display:block;width:'+(n/smax*100)+'%"></span></span><span>'+n+'</span></div>'}
   out+='<div class="panels"><div class="panel"><h3>Rating distribution</h3><div class="hist" role="img" aria-label="Rating distribution histogram">'+hh+'</div></div><div class="panel"><h3>Status</h3>'+sbar("Finished",sc.done)+sbar("Playing",sc.playing)+sbar("Dropped",sc.dropped)+'</div><div class="panel"><h3>Tags</h3>'+(tl.length?'<div class="tagcloud">'+tl.map(function(t){return '<button class="chip" data-tagfilter="'+esc(t)+'" title="Show games with this tag">'+esc(t)+'</button>'}).join("")+'</div>':'<p class="foot" style="margin:0">No tags for this game.</p>')+'</div></div>';
