@@ -1979,6 +1979,7 @@ var STATUS=[["done","Finished"],["playing","Playing"],["dropped","Dropped"],["wi
 var MONTHS=["January","February","March","April","May","June","July","August","September","October","November","December"];
 
 var state={logs:{},custom:[],public:false,following:[],lists:[],favs:[],username:"",email:"",salt:"",hash:"",profile:{}};
+var subj=null; /* when set, profile renderers show this member (read-only) instead of me */
 var ui={gid:"",lo:"me",lid:"",tab:"kesf",genre:"",sort:"year",profileSort:"year",bf:{tag:"",decade:"",plat:"",hide:false,open:""},pf:{tag:"",status:"",rmin:0,rmax:0,pend:false,norate:false,decade:"",genre:"",plat:"",hide:false,open:""},searchType:"games",q:"",homeQ:"",homeGenre:"",profile:null,psq:"",hits:null,globalHits:null};
 var editing=null; // {game, isNew, pendingCustom}
 var chain=Promise.resolve();
@@ -2491,12 +2492,13 @@ function viewDiscover(){
 
 function viewDiary(){
   var es=diaryEntries();
+  if(!es.length&&subj)return '<div class="intro"><div><h1>Diary</h1></div></div>'+emptyDiary();
   if(!es.length){
     return '<div class="intro"><div><h1>Diary</h1></div></div><div class="empty"><h3>Your diary is empty</h3><p>Pick a game from Discover and add a status, rating and review. Want a preview first? Load some sample entries.</p><div class="actions"><button class="btn" data-go="kesf">Pick a game</button><button class="btn ghost" data-sample="1">Load sample entries</button></div></div>';
   }
   es.sort(function(a,b){return (b.l.date||"").localeCompare(a.l.date||"")});
-  var out='<div class="intro"><div><h1>Diary</h1><p>'+es.length+' entries, sorted by date.</p></div>'+(es.some(function(e){return e.l.sample})?'<button class="btn ghost" data-clearsample="1">Remove samples</button>':"")+'</div>';
-  return out+diaryRows(es,false);
+  var out='<div class="intro"><div><h1>Diary</h1><p>'+es.length+' entries, sorted by date.</p></div>'+(!subj&&es.some(function(e){return e.l.sample})?'<button class="btn ghost" data-clearsample="1">Remove samples</button>':"")+'</div>';
+  return out+diaryRows(es,!!subj);
 }
 
 function diaryRows(es,ro){
@@ -2681,14 +2683,15 @@ function activityHtml(es,limit){
 }
 function favSlots(){
   var fs=myFavs(), out='<div class="favgrid">';
+  if(subj){if(!fs.length)return '<p class="label" style="margin:0 0 28px">No favorite games picked yet.</p>';return out+fs.map(function(g){return '<div class="slotw">'+gameCard(g)+'</div>'}).join("")+'</div>'}
   fs.forEach(function(g){out+='<div class="slotw">'+gameCard(g)+'<button class="x" data-unfav="'+esc(g.id)+'" aria-label="Remove “'+esc(g.t)+'” from favorites">×</button></div>'});
   for(var i=fs.length;i<4;i++)out+='<button class="game" data-pick="1" aria-label="Pick a favorite"><div class="cover emptyslot" aria-hidden="true">+</div><span class="meta"><span class="t" style="color:var(--mute);font-weight:500">Pick a favorite</span></span></button>';
   return out+'</div>';
 }
-function emptyDiary(){return '<div class="empty"><h3>No entries yet</h3><p>Pick a game and add a status, rating and review. You can also load sample entries to see how it looks.</p><div class="actions"><button class="btn" data-log="1">+ Log</button><button class="btn ghost" data-sample="1">Load sample entries</button></div></div>'}
+function emptyDiary(){if(subj)return '<div class="empty"><h3>No entries yet</h3><p>'+esc(personName(subj.id))+' hasn’t shared any games yet.</p></div>';return '<div class="empty"><h3>No entries yet</h3><p>Pick a game and add a status, rating and review. You can also load sample entries to see how it looks.</p><div class="actions"><button class="btn" data-log="1">+ Log</button><button class="btn ghost" data-sample="1">Load sample entries</button></div></div>'}
 function reviewsHtml(rs){
   rs=rs.slice().sort(function(a,b){return (b.l.date||"").localeCompare(a.l.date||"")});
-  return rs.map(function(e){return revBlock(myId,e,true)}).join("");
+  return rs.map(function(e){return revBlock(subj?subj.id:myId,e,!subj)}).join("");
 }
 function profileSortToolbar(){
   return '<div class="tools profile-tools"><span class="label">Sort by</span><select class="sort" id="profile-sort" aria-label="Sort profile games">'+sortOptions(ui.profileSort,true)+'</select></div>';
@@ -2702,18 +2705,20 @@ function gridOf(es,title){
 }
 function topReviews(es,n){
   var rs=es.filter(function(e){return e.l.review});
-  function score(e){return cmOf(myId,e.g.id).length*10+(e.l.liked?5:0)+(e.l.rating||0)/10}
+  function score(e){return cmOf(subj?subj.id:myId,e.g.id).length*10+(e.l.liked?5:0)+(e.l.rating||0)/10}
   return rs.slice().sort(function(a,b){return score(b)-score(a)||(b.l.date||"").localeCompare(a.l.date||"")}).slice(0,n);
 }
 function followingStrip(){
-  var ids=followingList();
+  var ids=subj?followingOf(subj.id):followingList();
   var out='<div class="sec"><h2>Following</h2><span class="label">'+ids.length+'</span></div>';
+  if(!ids.length&&subj)return out+'<p class="foot" style="margin:0 0 28px">Not following anyone yet.</p>';
   if(!ids.length)return out+'<p class="foot" style="margin:0 0 28px">You’re not following anyone yet. <a class="chip" href="#insanlar" data-tab="insanlar">Find people</a></p>';
   return out+'<div class="fstrip">'+ids.map(function(id){
     var u=avSrc(id),nm=personName(id);
     return '<button type="button" class="fitem" data-profile="'+esc(id)+'" title="'+esc(nm)+'" aria-label="'+esc(nm)+'"><span class="fav-av">'+(u?'<img src="'+esc(u)+'" alt="">':'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="9" r="4.2" fill="currentColor"/><path d="M3.5 22c.8-5 4.2-7.5 8.5-7.5s7.7 2.5 8.5 7.5z" fill="currentColor"/></svg>')+'</span><span class="fname">'+esc(nm)+'</span></button>';
   }).join('')+'</div>';
 }
+function tl(t){return subj?'href="#profil" data-ptab="'+t+'"':'href="#'+t+'" data-tab="'+t+'"'}
 function sideMe(es){
   var DAYS=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
   var dt=function(s){var d=(s||"").split("-");return d[2]?new Date(+d[0],+d[1]-1,+d[2]):null};
@@ -2721,11 +2726,11 @@ function sideMe(es){
   var out='';
   /* wishlist */
   var wl=wishEntries();
-  out+='<section class="sb"><div class="sec"><h2>Wishlist</h2><a class="chip" href="#istek" data-tab="istek">'+wl.length+'</a></div>';
-  out+=wl.length?'<div class="sb-wish">'+wl.slice(0,6).map(function(e){return '<button type="button" class="sb-w" data-open="'+esc(e.g.id)+'" title="'+esc(e.g.t)+'" aria-label="'+esc(e.g.t)+'">'+cover(e.g,true)+'</button>'}).join("")+'</div>':'<p class="label">Nothing on your wishlist yet.</p>';
-  out+='</section>';
+  if(!subj)out+='<section class="sb"><div class="sec"><h2>Wishlist</h2><a class="chip" '+tl("istek")+'>'+wl.length+'</a></div>';
+  if(!subj)out+=wl.length?'<div class="sb-wish">'+wl.slice(0,6).map(function(e){return '<button type="button" class="sb-w" data-open="'+esc(e.g.id)+'" title="'+esc(e.g.t)+'" aria-label="'+esc(e.g.t)+'">'+cover(e.g,true)+'</button>'}).join("")+'</div>':'<p class="label">Nothing on your wishlist yet.</p>';
+  if(!subj)out+='</section>';
   /* diary */
-  out+='<section class="sb"><div class="sec"><h2>Diary</h2><a class="chip" href="#gundelik" data-tab="gundelik">'+es.length+'</a></div>';
+  out+='<section class="sb"><div class="sec"><h2>Diary</h2><a class="chip" '+tl("gundelik")+'>'+es.length+'</a></div>';
   if(byDate.length){
     var lastM="";
     out+='<div class="sb-diary">'+byDate.slice(0,8).map(function(e){
@@ -2740,24 +2745,24 @@ function sideMe(es){
   rated.forEach(function(e){hist[e.l.rating-1]++});
   var hmax=Math.max.apply(null,hist.concat([1])),av=avg(es);
   out+='<section class="sb"><div class="sec"><h2>Ratings</h2><span class="label">'+rated.length+'</span></div>';
-  out+=rated.length?'<div class="sb-rate"><span class="sb-star" aria-hidden="true">★</span><div class="sb-bars" role="img" aria-label="Rating distribution, average '+av.toFixed(1)+' out of 5">'+hist.map(function(n,i){return '<span title="'+((i+1)/2)+'★: '+n+'" style="height:'+(n?Math.max(6,Math.round(n/hmax*100)):3)+'%"></span>'}).join("")+'</div><span class="sb-star five" aria-hidden="true">★★★★★</span></div><p class="label sb-avg">Average <b>'+av.toFixed(1)+'</b> / 5</p>':'<p class="label">Rate a game to see the distribution.</p>';
+  out+=rated.length?'<div class="sb-rate"><span class="sb-star" aria-hidden="true">★</span><div class="sb-bars" role="img" aria-label="Rating distribution, average '+av.toFixed(1)+' out of 5">'+hist.map(function(n,i){return '<span title="'+((i+1)/2)+'★: '+n+'" style="height:'+(n?Math.max(6,Math.round(n/hmax*100)):3)+'%"></span>'}).join("")+'</div><span class="sb-star five" aria-hidden="true">★★★★★</span></div><p class="label sb-avg">Average <b>'+av.toFixed(1)+'</b> / 5</p>':'<p class="label">'+(subj?'No ratings yet.':'Rate a game to see the distribution.')+'</p>';
   out+='</section>';
   /* recent lists */
   var ls=myLists();
   if(ls.length){
-    out+='<section class="sb"><div class="sec"><h2>Recent lists</h2><a class="chip" href="#lists" data-tab="lists">'+ls.length+'</a></div>';
+    out+='<section class="sb"><div class="sec"><h2>Recent lists</h2><a class="chip" '+tl("lists")+'>'+ls.length+'</a></div>';
     out+=ls.slice(-2).reverse().map(function(l){
       var gs=gamesOfList(l);
-      return '<button type="button" class="sb-list" data-viewlist="me|'+esc(l.id)+'"><span class="sb-stack">'+(gs.length?gs.slice(0,5).map(function(g,i){return '<span style="left:'+(i*22)+'px;z-index:'+(9-i)+'">'+cover(g,true)+'</span>'}).join(""):'<span class="sb-empty"></span>')+'</span><b>'+esc(l.name)+'</b><span class="label">'+gs.length+' games</span></button>';
+      return '<button type="button" class="sb-list" data-viewlist="'+(subj?esc(subj.id):'me')+'|'+esc(l.id)+'"><span class="sb-stack">'+(gs.length?gs.slice(0,5).map(function(g,i){return '<span style="left:'+(i*22)+'px;z-index:'+(9-i)+'">'+cover(g,true)+'</span>'}).join(""):'<span class="sb-empty"></span>')+'</span><b>'+esc(l.name)+'</b><span class="label">'+gs.length+' games</span></button>';
     }).join("");
     out+='</section>';
   }
   /* activity */
-  out+='<section class="sb"><div class="sec"><h2>Activity</h2>'+(es.length>5?'<a class="chip" href="#fealiyyet" data-tab="fealiyyet">All</a>':'')+'</div>';
+  out+='<section class="sb"><div class="sec"><h2>Activity</h2>'+(es.length>5?'<a class="chip" '+tl("fealiyyet")+'>All</a>':'')+'</div>';
   out+=byDate.length?'<ul class="sb-act">'+byDate.slice(0,5).map(function(e){
     var d=dt(e.l.date),vb=({done:"finished",playing:"played",dropped:"dropped",wish:"added"})[e.l.status]||"logged";
     var ds=d?" on "+DAYS[d.getDay()]+", "+MONTHS[d.getMonth()].slice(0,3)+" "+d.getDate()+", "+d.getFullYear():"";
-    return '<li><button type="button" data-open="'+esc(e.g.id)+'">You '+vb+(e.l.rating?" and rated":"")+' <b>'+esc(e.g.t)+'</b>'+(e.l.rating?' '+stars(e.l.rating):'')+'<span class="label">'+esc(ds.replace(/^ on /,""))+'</span></button></li>';
+    return '<li><button type="button" data-open="'+esc(e.g.id)+'">'+(subj?esc(personName(subj.id)):'You')+' '+vb+(e.l.rating?" and rated":"")+' <b>'+esc(e.g.t)+'</b>'+(e.l.rating?' '+stars(e.l.rating):'')+'<span class="label">'+esc(ds.replace(/^ on /,""))+'</span></button></li>';
   }).join("")+'</ul>':'<p class="label">No activity yet.</p>';
   out+='</section>';
   return out;
@@ -2765,13 +2770,13 @@ function sideMe(es){
 function viewMe(){
   var es=diaryEntries();
   var out='<div class="sec"><h2>Favorite games</h2><span class="label">Up to 4</span></div>'+favSlots();
-  out+='<div class="sec"><h2>Recent activity</h2>'+(es.length>4?'<a class="chip" href="#fealiyyet" data-tab="fealiyyet">All</a>':"")+'</div>';
+  out+='<div class="sec"><h2>Recent activity</h2>'+(es.length>4?'<a class="chip" '+tl("fealiyyet")+'>All</a>':"")+'</div>';
   out+=es.length?'<div class="favgrid actgrid">'+es.slice().sort(function(a,b){return (b.l.date||"").localeCompare(a.l.date||"")}).slice(0,4).map(function(e){return '<div class="actw">'+gameCard(e.g)+'<span class="act"><b>'+esc(VERB[e.l.status]||statusLabel(e.l.status))+'</b> · '+esc(fmtDate(e.l.date))+'</span></div>'}).join("")+'</div>':emptyDiary();
   var rv=es.filter(function(e){return e.l.review}),top=topReviews(es,2);
   var rec=rv.slice().sort(function(a,b){return (b.l.date||"").localeCompare(a.l.date||"")}).slice(0,2);
-  if(rec.length)out+='<div class="sec"><h2>Recent reviews</h2>'+(rv.length>2?'<a class="chip" href="#reyler" data-tab="reyler">More</a>':'<span class="label">'+rv.length+'</span>')+'</div>'+rec.map(function(e){return revBlock(myId,e,true)}).join("");
+  if(rec.length)out+='<div class="sec"><h2>Recent reviews</h2>'+(rv.length>2?'<a class="chip" '+tl("reyler")+'>More</a>':'<span class="label">'+rv.length+'</span>')+'</div>'+rec.map(function(e){return revBlock(subj?subj.id:myId,e,!subj)}).join("");
   if(top.length){
-    out+='<div class="sec"><h2>Popular reviews</h2>'+(rv.length>2?'<a class="chip" href="#reyler" data-tab="reyler">More</a>':'<span class="label">'+rv.length+'</span>')+'</div>'+top.map(function(e){return revBlock(myId,e,true)}).join("");
+    out+='<div class="sec"><h2>Popular reviews</h2>'+(rv.length>2?'<a class="chip" '+tl("reyler")+'>More</a>':'<span class="label">'+rv.length+'</span>')+'</div>'+top.map(function(e){return revBlock(subj?subj.id:myId,e,!subj)}).join("");
   }
   out+=followingStrip();
   return '<div class="megrid"><div class="memain">'+out+'</div><aside class="meside" aria-label="Profile summary">'+sideMe(es)+'</aside></div>';
@@ -2793,8 +2798,8 @@ function tabBody(tab){
   if(tab==="playing")return viewStatus("playing");
   if(tab==="dropped")return viewStatus("dropped");
   if(tab==="wanttoplay")return viewStatus("wish");
-  if(tab==="reyler"){var rs=es.filter(function(e){return e.l.review});return rs.length?'<div class="sec"><h2>Reviews</h2><span class="label">'+rs.length+'</span></div>'+reviewsHtml(rs):'<div class="empty"><h3>No reviews yet</h3><p>Open a game and write a review. It will show up here.</p></div>'}
-  if(tab==="beyenilen"){var ls=es.filter(function(e){return e.l.liked});return ls.length?gridOf(ls,"Likes"):'<div class="empty"><h3>No liked games yet</h3><p>Open a game and press “Like”. It will show up here.</p></div>'}
+  if(tab==="reyler"){var rs=es.filter(function(e){return e.l.review});return rs.length?'<div class="sec"><h2>Reviews</h2><span class="label">'+rs.length+'</span></div>'+reviewsHtml(rs):(subj?'<div class="empty"><h3>No reviews yet</h3></div>':'<div class="empty"><h3>No reviews yet</h3><p>Open a game and write a review. It will show up here.</p></div>')}
+  if(tab==="beyenilen"){var ls=es.filter(function(e){return e.l.liked});return ls.length?gridOf(ls,"Likes"):(subj?'<div class="empty"><h3>No liked games yet</h3></div>':'<div class="empty"><h3>No liked games yet</h3><p>Open a game and press “Like”. It will show up here.</p></div>')}
   return "";
 }
 function viewStatus(status){
@@ -2957,22 +2962,33 @@ function viewProfile(){
   var back='<button class="back" data-go="insanlar">← Members</button>';
   var fb=ui.profile&&ui.profile!==myId?followBtn(ui.profile):"";
   if(!p||!p.data.public)return back+'<div class="ph">'+avatarHead(ui.profile)+'<h1>'+esc(personName(ui.profile))+'</h1><span class="fb">'+fb+'</span></div><div class="empty"><h3>Profile not shared</h3><p>This person hasn’t shared their profile yet. Follow them and you’ll see it here once they do.</p></div>';
-  var es=entriesOf(p.data).filter(function(e){return e.l.status!=="wish"});
-  var a=avg(es), top=topOf(es,4);
-  var fids=Array.isArray(p.data.favs)?p.data.favs:[], fgs=entriesFavs(p.data,fids);
-  var fing=followingOf(p.id).length;
-  if(ui.pviewFor!==p.id){ui.pviewFor=p.id;ui.pview=""}
-  var PS=function(go,n,l,on){return '<button type="button" class="ps" data-pstat="'+go+'"'+(on!==undefined?' aria-pressed="'+on+'"':'')+'><b>'+n+'</b><span>'+l+'</span></button>'};
-  var stats=PS("sec-pdiary",es.length,"Games")+'<div><b>'+(a?a.toFixed(1):"–")+'</b><span>Avg</span></div>'+PS("pview:following",fing,"Following",ui.pview==="following")+PS("pview:followers",followersOf(p.id),"Followers",ui.pview==="followers");
-  var out=back+'<div class="ph">'+avatarHead(p.id)+'<div class="pinfo"><div class="pname"><h1>'+esc(personName(p.id))+'</h1><span class="fb">'+fb+'</span></div>'+profMeta(p.data.profile)+'</div><div class="pstats">'+stats+'</div></div>';
-  if(ui.pview){var pl=ui.pview==="following"?followingOf(p.id):followersList(p.id);out+='<div class="sec" id="sec-pview"><h2>'+(ui.pview==="following"?"Following":"Followers")+'</h2><span class="label">'+pl.length+'</span></div>'+(people===null?'<p class="label">Loading…</p>':pl.length?memberCards(pl):'<div class="empty"><h3>'+(ui.pview==="following"?"Not following anyone yet":"No followers yet")+'</h3></div>');}
-  if(fgs.length)out+='<div class="sec"><h2>Favorite games</h2></div><div class="favs">'+fgs.map(function(g){return gameCard(g,(p.data.logs&&p.data.logs[g.id])||null,true)}).join("")+'</div>';
-  else if(top.length)out+='<div class="sec"><h2>Top rated</h2></div><div class="favs">'+top.map(function(e){return gameCard(e.g,e.l,true)}).join("")+'</div>';
-  var pls=Array.isArray(p.data.lists)?p.data.lists:[];
-  if(pls.length)out+='<div class="sec"><h2>Lists</h2><span class="label">'+pls.length+'</span></div><div class="people" style="margin-bottom:28px">'+pls.map(function(l){return listCard(p.id,l,p.data)}).join("")+'</div>';
-  var prs=es.filter(function(e){return e.l.review});
-  if(prs.length)out+='<div class="sec"><h2>Reviews</h2><span class="label">'+prs.length+'</span></div>'+prs.map(function(e){return revBlock(p.id,e,false)}).join("");
-  out+='<div class="sec" id="sec-pdiary"><h2>Diary</h2><span class="label">'+es.length+'</span></div>'+diaryRows(es,true);
+  if(ui.pviewFor!==p.id){ui.pviewFor=p.id;ui.pview="";ui.ptab="profilim";ui.pf={tag:"",status:"",rmin:0,rmax:0,pend:false,norate:false,decade:"",genre:"",plat:"",hide:false,open:""}}
+  var tab=ui.ptab||"profilim", d=p.data;
+  var sv={logs:state.logs,custom:state.custom,favs:state.favs,lists:state.lists,profile:state.profile};
+  /* render the member with the very same profile screens as mine: temporarily point them at this member's shared data */
+  state.logs=(d.logs&&typeof d.logs==="object")?d.logs:{};
+  state.custom=Array.isArray(d.custom)?d.custom:[];
+  state.favs=Array.isArray(d.favs)?d.favs:[];
+  state.lists=Array.isArray(d.lists)?d.lists:[];
+  state.profile=(d.profile&&typeof d.profile==="object")?d.profile:{};
+  subj=p;
+  var out;
+  try{
+    var es=diaryEntries(), yr=String(new Date().getFullYear());
+    var thisYear=es.filter(function(e){return (e.l.date||"").indexOf(yr)===0}).length;
+    var PS=function(go,n,l,on){return '<button type="button" class="ps" data-pstat="'+go+'"'+(on!==undefined?' aria-pressed="'+on+'"':'')+'><b>'+n+'</b><span>'+l+'</span></button>'};
+    var stats=PS("ptab:oyunlarim",es.length,"Games")+PS("ptab:gundelik",thisYear,"This year")+PS("ptab:lists",myLists().length,"Lists")+PS("pview:following",followingOf(p.id).length,"Following",ui.pview==="following")+PS("pview:followers",followersOf(p.id),"Followers",ui.pview==="followers");
+    out=back+'<div class="ph">'+avatarHead(p.id)+'<div class="pinfo"><div class="pname"><h1>'+esc(personName(p.id))+'</h1><span class="fb">'+fb+'</span></div>'+profMeta(state.profile)+'</div><div class="pstats">'+stats+'</div></div>';
+    if(ui.pview){
+      var pl=ui.pview==="following"?followingOf(p.id):followersList(p.id);
+      out+='<div class="sec" id="sec-pview"><h2>'+(ui.pview==="following"?"Following":"Followers")+'</h2><span class="label">'+pl.length+'</span></div>'+(people===null?'<p class="label">Loading…</p>':pl.length?memberCards(pl):'<div class="empty"><h3>'+(ui.pview==="following"?"Not following anyone yet":"No followers yet")+'</h3></div>');
+    }
+    var tabs=PTABS.filter(function(t){return t[0]!=="istek"});
+    out+='<nav class="subnav" aria-label="Profile sections"><div class="subnav-in">'+tabs.map(function(t){return '<a href="#profil" data-ptab="'+t[0]+'"'+(t[0]===tab?' aria-current="page"':"")+'>'+t[1]+'</a>'}).join("")+'</div></nav>';
+    out+='<div class="shellbody">'+tabBody(tab==="istek"?"profilim":tab)+'</div>';
+  }finally{
+    state.logs=sv.logs;state.custom=sv.custom;state.favs=sv.favs;state.lists=sv.lists;state.profile=sv.profile;subj=null;
+  }
   return out;
 }
 
@@ -2998,7 +3014,7 @@ function viewStats(){
   var gl=Object.keys(gc).sort(function(a,b){return gc[b]-gc[a]}).slice(0,6), gmax=gc[gl[0]]||1;
   var gh=gl.map(function(k){return '<div class="hbar"><span class="nm" style="text-align:left;font:inherit;color:inherit">'+esc(k)+'</span><span class="track"><span class="fill" style="display:block;width:'+(gc[k]/gmax*100)+'%"></span></span><span>'+gc[k]+'</span></div>'}).join("");
   var favs=es.filter(function(e){return e.l.rating>0}).sort(function(a,b){return b.l.rating-a.l.rating||(b.l.liked?1:0)-(a.l.liked?1:0)}).slice(0,4);
-  var out='<div class="intro"><div><h1>Stats</h1><p>Based only on the games you’ve logged.</p></div></div>';
+  var out='<div class="intro"><div><h1>Stats</h1><p>'+(subj?'Based only on the games '+esc(personName(subj.id))+' shared.':'Based only on the games you’ve logged.')+'</p></div></div>';
   out+='<div class="tiles"><div class="tile"><b>'+es.length+'</b><span class="label">Logged</span></div><div class="tile"><b>'+done+'</b><span class="label">Finished</span></div><div class="tile"><b>'+(rated.length?avg.toFixed(1):"–")+'</b><span class="label">Avg. rating</span></div><div class="tile"><b>'+liked+'</b><span class="label">Liked</span></div><div class="tile"><b>'+Math.round(es.reduce(function(a,e){return a+(e.l.hours||0)},0))+'</b><span class="label">Hours played</span></div></div>';
   out+='<div class="panels"><div class="panel"><h3>Rating distribution</h3><div class="hist" role="img" aria-label="Rating distribution histogram">'+hh+'</div></div><div class="panel"><h3>Most played genres</h3>'+gh+'</div></div>';
   if(favs.length)out+='<h3 style="margin-bottom:12px;font-size:1.1rem">Top rated</h3><div class="favs">'+favs.map(function(e){return gameCard(e.g)}).join("")+'</div>';
@@ -3009,7 +3025,7 @@ function viewStats(){
   es.forEach(function(e){var y=(e.l.date||"").slice(0,4);if(y)ym[y]=(ym[y]||0)+1;var p=e.l.platform||"Other";pm[p]=(pm[p]||0)+1;if(e.l.hours>0)hm[e.g.t]=e.l.hours;if(e.l.rating>0){gs[e.g.g]=(gs[e.g.g]||0)+e.l.rating;gn[e.g.g]=(gn[e.g.g]||0)+1}});
   var ga={};Object.keys(gs).forEach(function(k){ga[k]=gs[k]/gn[k]/2});
   var ye=es.filter(function(e){return (e.l.date||"").slice(0,4)===yr}),yd=ye.filter(function(e){return e.l.status==="done"}).length,yh=ye.reduce(function(a,e){return a+(e.l.hours||0)},0),yr_=ye.filter(function(e){return e.l.rating>0}),yb=yr_.slice().sort(function(a,b){return b.l.rating-a.l.rating})[0];
-  out+='<h3 style="margin:28px 0 12px;font-size:1.1rem">Your '+yr+' in games</h3><div class="tiles"><div class="tile"><b>'+ye.length+'</b><span class="label">Logged</span></div><div class="tile"><b>'+yd+'</b><span class="label">Finished</span></div><div class="tile"><b>'+Math.round(yh)+'</b><span class="label">Hours</span></div><div class="tile"><b>'+(yr_.length?(yr_.reduce(function(a,e){return a+e.l.rating},0)/yr_.length/2).toFixed(1):"–")+'</b><span class="label">Avg. rating</span></div></div>'+(yb?'<p class="foot">Top game of '+yr+': <b>'+esc(yb.g.t)+'</b> ('+ratingText(yb.l.rating)+')</p>':'');
+  out+='<h3 style="margin:28px 0 12px;font-size:1.1rem">'+(subj?'Their ':'Your ')+yr+' in games</h3><div class="tiles"><div class="tile"><b>'+ye.length+'</b><span class="label">Logged</span></div><div class="tile"><b>'+yd+'</b><span class="label">Finished</span></div><div class="tile"><b>'+Math.round(yh)+'</b><span class="label">Hours</span></div><div class="tile"><b>'+(yr_.length?(yr_.reduce(function(a,e){return a+e.l.rating},0)/yr_.length/2).toFixed(1):"–")+'</b><span class="label">Avg. rating</span></div></div>'+(yb?'<p class="foot">Top game of '+yr+': <b>'+esc(yb.g.t)+'</b> ('+ratingText(yb.l.rating)+')</p>':'');
   out+='<div class="panels" style="margin-top:20px"><div class="panel"><h3>Games logged per year</h3>'+hb(ym)+'</div><div class="panel"><h3>By platform</h3>'+hb(top(pm,6))+'</div></div>';
   out+='<div class="panels"><div class="panel"><h3>Most hours played</h3>'+hb(top(hm,5),function(v){return v+" h"})+'</div><div class="panel"><h3>Avg. rating by genre</h3>'+hb(top(ga,6),function(v){return v.toFixed(1)+" / 5"})+'</div></div>';
   return out;
@@ -3461,6 +3477,7 @@ function listCard(own,l,data){
 }
 function viewLists(){
   var ls=myLists();
+  if(subj){var so='<div class="intro"><div><h1>Lists</h1></div></div>';return ls.length?so+'<div class="people">'+ls.map(function(l){return listCard(subj.id,l)}).join("")+'</div>':so+'<div class="empty"><h3>No public lists</h3></div>'}
   var out='<div class="intro"><div><h1>Lists</h1><p>Group games into your own lists: favorites, hidden gems, co-op nights.</p></div><button class="btn" data-newlist="1">+ New list</button></div>';
   if(!ls.length)return out+'<div class="empty"><h3>No lists yet</h3><p>Create a list and add games to it. Public lists appear on your profile.</p><div class="actions"><button class="btn" data-newlist="1">+ New list</button></div></div>';
   return out+'<div class="people">'+ls.map(function(l){return listCard("me",l)}).join("")+'</div>';
@@ -3664,9 +3681,12 @@ document.addEventListener("keydown",function(e){if(e.key==="Escape"&&!umenu.hidd
 /* ---------- events ---------- */
 function scrollSect(){var id=ui.sect;ui.sect="";if(!id)return;setTimeout(function(){var el=document.getElementById(id);if(el)el.scrollIntoView({behavior:"smooth",block:"start"})},60)}
 document.addEventListener("click",function(e){
+  var pt=e.target.closest("[data-ptab]");
+  if(pt){e.preventDefault();ui.ptab=pt.dataset.ptab;render();return}
   var b=e.target.closest("[data-pstat]");if(!b)return;
   e.preventDefault();
   var v=b.dataset.pstat,a=v.split(":");
+  if(a[0]==="ptab"){ui.ptab=a[1];render();window.scrollTo(0,0);return}
   if(a[0]==="pview"){ui.pview=ui.pview===a[1]?"":a[1];render();if(ui.pview){ui.sect="sec-pview";scrollSect()}return}
   if(a[0]==="sec-pdiary"){ui.sect="sec-pdiary";scrollSect();return}
   ui.sect=a[1]||"";
