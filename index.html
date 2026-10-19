@@ -34,14 +34,50 @@
 .pf-sep{height:1px;background:var(--line);margin:6px 0}
 .pf-cap{padding:4px 16px}
 .pf-stars{display:flex;gap:2px;padding:4px 12px}
-.pf-star{background:transparent;border:0;font-size:2.1rem;line-height:1;color:#3a4756;cursor:pointer;padding:0 2px}
-.pf-star:hover{color:#6b7e92}.pf-star.on{color:var(--accent)}
+.pf-star{--off:#3a4756;--on:var(--accent);background:linear-gradient(90deg,var(--on) var(--f,0%),var(--off) var(--f,0%));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;border:0;font-size:2.1rem;line-height:1;cursor:pointer;padding:0 2px}
 .pf-hint{padding:2px 16px 8px;font-size:.78rem;color:var(--mute)}
 .nobadge .badge{display:none}
 .actw{min-width:0}.act{display:block;margin:-2px 0 0;font-size:.78rem;color:var(--mute)}.act b{color:var(--blue);font-weight:600}
 .fstrip{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:32px}
 .fav-av{width:50px;height:50px;border-radius:50%;padding:0;border:1px solid var(--line);background:var(--panel2);color:#6b7e92;overflow:hidden;cursor:pointer;display:grid;place-items:center}
-.fav-av:hover{border-color:var(--blue)}
+.fav-av:hover,.fitem:hover .fav-av{border-color:var(--blue)}
+.megrid{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:40px;align-items:start}
+.memain{min-width:0}.memain .favgrid{max-width:none}
+.meside{min-width:0}
+.sb{margin-bottom:26px}.sb .sec{margin-bottom:10px}
+.sb button{font:inherit;color:inherit;background:none;border:0;padding:0;text-align:left;cursor:pointer}
+.sb-wish{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px}
+.sb-w{display:block;min-width:0}.sb-w .cover.sm{width:100%}.sb-w:hover .cover{box-shadow:0 0 0 2px var(--accent)}
+.sb-month{display:flex;margin:10px 0 4px}.sb-month:first-child{margin-top:0}
+.sb-cal{position:relative;display:inline-grid;place-items:center;color:var(--mute)}
+.sb-cal b{position:absolute;top:9px;font:700 .5rem var(--f-body);letter-spacing:.02em;color:var(--head)}
+.sb-d{display:flex;align-items:baseline;gap:12px;width:100%;padding:4px 0}
+.sb-day{width:22px;text-align:right;color:var(--mute);font-variant-numeric:tabular-nums;font-size:.82rem}
+.sb-t{color:var(--head);font-size:.9rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.sb-d:hover .sb-t{color:var(--blue)}
+.sb-rate{display:flex;align-items:flex-end;gap:6px}
+.sb-star{color:var(--star);font-size:.7rem;line-height:1;padding-bottom:1px;flex:none}
+.sb-bars{flex:1;display:flex;align-items:flex-end;gap:2px;height:44px;border-bottom:1px solid var(--line)}
+.sb-bars span{flex:1;background:var(--panel2);border-radius:1px 1px 0 0;min-height:2px}.sb-bars span:hover{background:var(--star)}
+.sb-avg{margin:6px 0 0;text-align:right}.sb-avg b{color:var(--head)}
+.sb-list{display:block;width:100%;margin-bottom:12px}
+.sb-stack{position:relative;display:block;height:96px;margin-bottom:6px}
+.sb-stack>span{position:absolute;top:0;width:64px}.sb-stack .cover.sm{width:64px;box-shadow:0 0 0 1px var(--bg),inset 0 0 0 1px rgba(255,255,255,.1)}
+.sb-empty{display:block;width:64px;height:96px;border-radius:3px;background:var(--panel2)}
+.sb-list b{display:block;color:var(--head);font-size:.95rem}.sb-list:hover b{color:var(--blue)}
+.sb-act{list-style:none;margin:0;padding:0 0 0 14px;border-left:2px solid var(--line)}
+.sb-act li{position:relative;padding:0 0 14px 10px}
+.sb-act li::before{content:"";position:absolute;left:-19px;top:5px;width:8px;height:8px;border-radius:50%;background:var(--mute)}
+.sb-act button{width:100%;font-size:.82rem;line-height:1.5;color:var(--mute)}
+.sb-act b{color:var(--head)}.sb-act .stars{font-size:.8rem;vertical-align:-1px;margin-left:4px}
+.sb-act .label{display:block;font-size:.72rem}
+.sb-act button:hover b{color:var(--blue)}
+@media(max-width:860px){.megrid{grid-template-columns:minmax(0,1fr);gap:8px}}
+.fitem{background:none;border:0;padding:0;display:flex;flex-direction:column;align-items:center;gap:6px;width:72px;cursor:pointer;font:inherit;color:inherit}
+.fitem .fav-av{cursor:pointer}
+.fname{max-width:100%;font:600 .74rem/1.2 var(--f-body);color:var(--mute);text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fitem:hover .fname{color:var(--head)}
+.fitem:focus-visible{outline:2px solid var(--blue);outline-offset:3px;border-radius:8px}
 .fav-av img{width:100%;height:100%;object-fit:cover;display:block}
 .fav-av svg{width:70%;height:70%}
 @media(max-width:640px){.pf-sort{margin-left:0}}
@@ -60,7 +96,7 @@ html[data-theme=light],:root[data-theme=light] body{background:#f4f6f8!important
 :root[data-theme=light] body::before{background:#14181c}
 :root[data-theme=light] .pf-btn,:root[data-theme=light] .pf-sort,:root[data-theme=light] .pf-eye,:root[data-theme=light] .pf-sort select,:root[data-theme=light] .pmeta,:root[data-theme=light] .pstats span,:root[data-theme=light] .subnav a,:root[data-theme=light] .subnav-s{color:#5b6b7a}
 :root[data-theme=light] .pf-btn.active,:root[data-theme=light] .pf-btn:hover{color:#0a7bb5}
-:root[data-theme=light] .pf-star{color:#c3ccd5}:root[data-theme=light] .pf-star.on{color:#0a7bb5}
+:root[data-theme=light] .pf-star{--off:#c3ccd5;--on:#0a7bb5}
 :root[data-theme=light] .pbio{color:#2b3640}
 :root[data-theme=light] .subnav{border-color:#d8dee4}
 :root[data-theme=light] .subnav a:hover,:root[data-theme=light] .subnav a[aria-current=page],:root[data-theme=light] .subnav-s:hover{color:#10161c}
@@ -141,11 +177,16 @@ h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;color:var(--hea
 .ph h1{font:600 clamp(1.5rem,4vw,2rem)/1.1 var(--f-display);letter-spacing:-.01em;overflow-wrap:anywhere;min-width:0}
 .ph .fb{display:flex}
 .pstats{display:flex;margin-left:auto}
-.pstats div{padding:0 18px;border-left:1px solid var(--line);text-align:center}
-.pstats div:first-child{border-left:0}
+.pstats>*{padding:0 18px;border-left:1px solid var(--line);text-align:center}
+.pstats>*:first-child{border-left:0}
+.pstats .ps{background:none;border-top:0;border-right:0;border-bottom:0;font:inherit;color:inherit;cursor:pointer;border-radius:0;transition:background .15s}
+.pstats .ps:hover{background:rgba(127,147,168,.12)}.pstats .ps:hover span,.pstats .ps[aria-pressed=true] span{color:var(--head)}
+.pstats .ps:focus-visible{outline:2px solid currentColor;outline-offset:-2px}
+.pstats .ps[aria-pressed=true]{background:rgba(127,147,168,.16)}
+[id^=sec-]{scroll-margin-top:90px}
 .pstats b{display:block;font:600 1.45rem/1.2 var(--f-display);color:var(--head);font-variant-numeric:tabular-nums}
 .pstats span{font:700 .64rem var(--f-body);letter-spacing:.1em;text-transform:uppercase;color:var(--mute)}
-@media(max-width:640px){.pstats{margin-left:0;width:100%}.pstats div{flex:1;padding:0 6px}}
+@media(max-width:640px){.pstats{margin-left:0;width:100%}.pstats>*{flex:1;padding:0 6px}}
 .subnav{border:1px solid var(--line);border-radius:4px;margin-bottom:28px;overflow-x:auto;background:var(--bg)}
 .subnav-in{display:flex;width:max-content;margin:0 auto;padding:0 6px}
 .subnav a{position:relative;padding:14px 16px;color:var(--mute);font-size:1rem;text-decoration:none;white-space:nowrap}
@@ -210,6 +251,41 @@ h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;color:var(--hea
 .st.playing{color:var(--orange);border-color:var(--orange)}
 .st.sample{border-style:dashed}
 .heart{color:var(--heart)}
+
+
+/* diary table (Letterboxd-style) */
+.dtable{border-top:1px solid var(--line)}
+.dhead-row,.drow{display:grid;grid-template-columns:96px 46px minmax(0,1fr) 64px 112px 44px 56px 88px;align-items:center;column-gap:10px}
+.dhead-row{padding:8px 0 8px 0;border-bottom:1px solid var(--line);font:600 .68rem var(--f-body);letter-spacing:.1em;text-transform:uppercase;color:var(--mute);background:var(--panel)}
+.dhead-row span{padding:0 4px}
+.dhead-row .c,.drow .c{text-align:center;justify-self:center}
+.drow{position:relative;min-height:96px;padding:0;border-bottom:1px solid var(--line);cursor:pointer;color:inherit}
+.drow.ro{cursor:default}
+.drow:hover{background:var(--panel)}
+.drow .dm{padding-left:4px;display:flex;align-items:center}
+.cal{width:80px;border-radius:6px;background:var(--panel2);border:1px solid var(--line);border-top:0;text-align:center;padding:10px 0 7px;position:relative;box-shadow:0 2px 0 rgba(0,0,0,.35);font-family:var(--f-body)}
+.cal::before,.cal::after{content:"";position:absolute;top:-5px;width:4px;height:10px;border-radius:2px;background:var(--mute)}
+.cal::before{left:18px}.cal::after{right:18px}
+.cal b{display:block;font:500 1.25rem/1 var(--f-display);letter-spacing:.06em;color:var(--head);text-transform:uppercase}
+.cal span{display:block;font:500 .8rem/1.3 var(--f-data);color:var(--fg);margin-top:3px}
+.drow .dd{font:300 1.9rem/1 var(--f-display);color:var(--mute);text-align:center}
+.drow .dg{display:flex;align-items:center;gap:12px;min-width:0;padding:10px 0}
+.drow .dg .cover.sm{width:44px}
+.drow .dt{min-width:0;display:flex;flex-direction:column;gap:3px}
+.drow .dt b{font:700 1.2rem/1.2 var(--f-display);color:var(--head);overflow-wrap:anywhere}
+.drow .dt small{font:600 .64rem var(--f-body);letter-spacing:.08em;text-transform:uppercase;color:var(--mute)}
+.drow .dy{font:400 .95rem var(--f-data);color:var(--fg);text-align:center}
+.drow .dr .stars{font-size:1.05rem}
+.drow .dl .heart,.drow .dl .noheart{font-size:1.15rem}
+.drow .dl .noheart{color:var(--star-off)}
+.drow .dv{color:var(--mute);display:flex;justify-content:center}
+.drow .dv svg{width:22px;height:22px}
+.drow .de{align-self:stretch;display:flex;align-items:center;justify-content:center;gap:2px;background:var(--panel);border-left:1px solid var(--line)}
+.drow:hover .de{background:var(--panel2)}
+.dbtn{background:none;border:0;color:var(--mute);padding:8px;border-radius:4px;display:grid;place-items:center;cursor:pointer}
+.dbtn:hover{color:var(--head)}
+.dbtn svg{width:20px;height:20px}
+.dmonth-m{display:none}
 
 /* empty + buttons */
 .empty{border:1px dashed var(--line);border-radius:6px;padding:34px 22px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:10px}
@@ -376,7 +452,7 @@ body{background:linear-gradient(180deg,#202a35 0,#171d24 360px,#14181c 520px) no
 .pmeta{gap:20px;color:#7f93a8;font-size:1rem}
 .pmeta .pm,.pmeta a{display:inline-flex;align-items:center;gap:5px}
 .pstats{margin-left:auto;align-self:flex-start;padding-top:10px}
-.pstats div{padding:0 16px}.pstats div:last-child{padding-right:0}
+.pstats>*{padding:0 16px}.pstats>*:last-child{padding-right:0}
 .pstats b{font:700 1.6rem/1.2 var(--f-display)}
 .pstats span{font-size:.66rem;color:#7f93a8}
 /* profile tab bar */
@@ -536,6 +612,21 @@ window.addEventListener("hashchange",sync);window.addEventListener("load",sync);
   <div class="dfoot"><button type="button" class="btn danger spacer" id="ld-del" hidden>Delete</button><button type="button" class="btn ghost" id="ld-cancel">Cancel</button><button type="submit" class="btn">Save</button></div>
 </form></dialog>
 
+<dialog id="avd" aria-label="Profile photo"><div class="avd-bar"><span class="avd-logo" aria-hidden="true"><svg viewBox="0 0 64 64" width="30" height="30"><defs><linearGradient id="lg2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7c5cff"/><stop offset="1" stop-color="#00d9ff"/></linearGradient></defs><rect width="64" height="64" rx="15" fill="url(#lg2)"/><path d="M20 22h24c5 0 8 3 10 9l3 10c1 4-1 7-5 7-3 0-5-2-7-5l-2-3H21l-2 3c-2 3-4 5-7 5-4 0-6-3-5-7l3-10c2-6 5-9 10-9z" fill="#14181c"/><path d="M22 30v8M18 34h8" stroke="#40bcf4" stroke-width="2.4" stroke-linecap="round"/><path d="M33 34h4M41 31.5v.01M41 36.5v.01M38.5 34h.01M43.5 34h.01" stroke="#40bcf4" stroke-width="2.4" stroke-linecap="round"/></svg><b>Game<em>boxd</em></b></span><button type="button" class="avd-x" id="avd-x" aria-label="Close"><svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path d="M3 3l18 18M21 3L3 21" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" fill="none"/></svg></button></div><img id="avd-img" alt=""></dialog>
+<style>
+.ph img.av{cursor:zoom-in}
+.ph .av-ph{display:grid;place-items:center;background:var(--panel2);color:#6b7e92;overflow:hidden}
+.ph .av-ph svg{width:62%;height:62%;margin-top:14%}
+#avd{background:#3d4e5f;border:0;padding:0;width:min(625px,94vw);max-width:94vw;max-height:94dvh;overflow:hidden;margin:auto;border-radius:0;box-shadow:0 10px 40px rgba(0,0,0,.6)}
+#avd .avd-bar{height:50px;display:flex;align-items:center;justify-content:space-between;padding:0 14px;background:#3d4e5f}
+#avd .avd-logo{display:flex;align-items:center;gap:10px;font:800 1.15rem/1 var(--f-display);letter-spacing:-.03em;color:#fff}
+#avd .avd-logo b{font:inherit}
+#avd .avd-logo em{font-style:normal;background:linear-gradient(90deg,#40a9ff,#00e0ff);-webkit-background-clip:text;background-clip:text;color:transparent}
+#avd .avd-x{background:none;border:0;padding:0;color:#a9b8c6;cursor:pointer;display:flex}
+#avd .avd-x:hover{color:#fff}
+#avd img{display:block;width:100%;aspect-ratio:1/1;height:auto;max-height:calc(94dvh - 50px);object-fit:cover;border-radius:0;box-shadow:none;cursor:zoom-out}
+#avd::backdrop{background:rgba(5,9,14,.82)}
+</style>
 <style id="mobile-css">
 .bnav{display:none}
 .favgrid .game,.grid .game{width:100%;min-width:0}
@@ -583,6 +674,21 @@ window.addEventListener("hashchange",sync);window.addEventListener("load",sync);
   .badge,.cover .mc-score{font-size:.66rem}
   .game .y{font-size:.68rem}
   .cover .ct{font-size:.72rem;padding:20px 6px 6px}
+
+  /* diary table, mobile */
+  .dhead-row{display:none}
+  .drow{grid-template-columns:56px 28px minmax(0,1fr) auto;grid-template-areas:"dm dd dg de" "dm dd dr de";column-gap:8px;min-height:0;padding:10px 0}
+  .drow .dm{grid-area:dm;align-items:flex-start;padding-left:0}
+  .drow .dd{grid-area:dd;font-size:1.4rem;align-self:start;padding-top:4px}
+  .drow .dg{grid-area:dg;padding:0}
+  .drow .dg .dt b{font-size:1rem}
+  .drow .dy,.drow .dl,.drow .dv{display:none}
+  .drow .dr{grid-area:dr;padding-left:56px}
+  .drow .dr .stars{font-size:.95rem}
+  .drow .de{grid-area:de;border-left:0;background:none;flex-direction:column;align-self:center}
+  .cal{width:52px;padding:8px 0 5px;border-radius:5px}
+  .cal::before{left:9px}.cal::after{right:9px}
+  .cal b{font-size:.9rem}.cal span{font-size:.68rem}
   .row{gap:10px;padding:10px 2px}
   .row .d{width:1.6rem;font-size:.95rem}
   .row .tt b{font-size:.98rem}
@@ -650,7 +756,7 @@ window.addEventListener("hashchange",sync);window.addEventListener("load",sync);
   .topright .tlink{height:42px;min-width:42px}
   .topright .search{order:10;flex:0 0 100%;width:100%;margin-top:2px}
   .pstats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));width:100%;margin-left:0}
-  .pstats div{padding:0 2px;min-width:0}
+  .pstats>*{padding:0 2px;min-width:0}
   .pstats span{display:block;font-size:.55rem;letter-spacing:.06em;line-height:1.2}
 }
 @media(min-width:521px) and (max-width:720px){.grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
@@ -1437,6 +1543,73 @@ var GAMES=[
 {id:"minecraftdungeons",t:"Minecraft Dungeons",y:2020,d:"Mojang Studios",g:"Action",k:"singleplayer,multiplayer,co-op,local co-op"},
 {id:"minecraftlegends",t:"Minecraft Legends",y:2023,d:"Mojang Studios",g:"Strategy",k:"singleplayer",w:"Minecraft Legends"},
 {id:"spyro1",t:"Spyro the Dragon",y:1998,d:"Insomniac Games",g:"Platformer",k:"singleplayer",w:"Spyro the Dragon"},
+/* --- PES, FIFA and party / co-op additions --- */
+{id:"pes3",t:"Pro Evolution Soccer 3",y:2003,d:"Konami",g:"Sports",k:"multiplayer"},
+{id:"pes4",t:"Pro Evolution Soccer 4",y:2004,d:"Konami",g:"Sports",k:"multiplayer"},
+{id:"pes5",t:"Pro Evolution Soccer 5",y:2005,d:"Konami",g:"Sports",k:"multiplayer"},
+{id:"pes6",t:"Pro Evolution Soccer 6",y:2006,d:"Konami",g:"Sports",k:"multiplayer"},
+{id:"pes2008",t:"Pro Evolution Soccer 2008",y:2007,d:"Konami",g:"Sports",k:"multiplayer"},
+{id:"pes2009",t:"Pro Evolution Soccer 2009",y:2008,d:"Konami",g:"Sports",k:"multiplayer"},
+{id:"pes2010",t:"Pro Evolution Soccer 2010",y:2009,d:"Konami",g:"Sports",k:"multiplayer"},
+{id:"pes2011",t:"Pro Evolution Soccer 2011",y:2010,d:"Konami",g:"Sports",k:"multiplayer"},
+{id:"pes2012",t:"Pro Evolution Soccer 2012",y:2011,d:"Konami",g:"Sports",k:"multiplayer"},
+{id:"pes2013",t:"Pro Evolution Soccer 2013",y:2012,d:"Konami",g:"Sports",k:"multiplayer"},
+{id:"pes2014",t:"Pro Evolution Soccer 2014",y:2013,d:"Konami",g:"Sports",k:"multiplayer"},
+{id:"pes2015",t:"Pro Evolution Soccer 2015",y:2014,d:"Konami",g:"Sports",k:"multiplayer"},
+{id:"pes2016",t:"Pro Evolution Soccer 2016",y:2015,d:"Konami",g:"Sports",k:"multiplayer"},
+{id:"pes2017",t:"Pro Evolution Soccer 2017",y:2016,d:"Konami",g:"Sports",k:"multiplayer"},
+{id:"pes2019",t:"Pro Evolution Soccer 2019",y:2018,d:"Konami",g:"Sports",k:"multiplayer"},
+{id:"pes2020",t:"eFootball PES 2020",y:2019,d:"Konami",g:"Sports",k:"multiplayer"},
+{id:"pes2021",t:"eFootball PES 2021",y:2020,d:"Konami",g:"Sports",k:"multiplayer"},
+{id:"fifa98",t:"FIFA: Road to World Cup 98",y:1997,d:"EA Canada",g:"Sports",k:"singleplayer,multiplayer"},
+{id:"fifa99",t:"FIFA 99",y:1998,d:"EA Canada",g:"Sports",k:"singleplayer,multiplayer"},
+{id:"fifa2000",t:"FIFA 2000",y:1999,d:"EA Canada",g:"Sports",k:"singleplayer,multiplayer"},
+{id:"fifa2001",t:"FIFA 2001",y:2000,d:"EA Canada",g:"Sports",k:"singleplayer,multiplayer"},
+{id:"fifa2002",t:"FIFA 2002",y:2001,d:"EA Canada",g:"Sports",k:"singleplayer,multiplayer"},
+{id:"fifa2003",t:"FIFA Football 2003",y:2002,d:"EA Canada",g:"Sports",k:"singleplayer,multiplayer"},
+{id:"fifa2004",t:"FIFA Football 2004",y:2003,d:"EA Canada",g:"Sports",k:"singleplayer,multiplayer"},
+{id:"fifa2005",t:"FIFA Football 2005",y:2004,d:"EA Canada",g:"Sports",k:"singleplayer,multiplayer"},
+{id:"fifa06",t:"FIFA 06",y:2005,d:"EA Canada",g:"Sports",k:"singleplayer,multiplayer"},
+{id:"fifa07",t:"FIFA 07",y:2006,d:"EA Canada",g:"Sports",k:"singleplayer,multiplayer"},
+{id:"fifa08",t:"FIFA 08",y:2007,d:"EA Canada",g:"Sports",k:"singleplayer,multiplayer"},
+{id:"fifa09",t:"FIFA 09",y:2008,d:"EA Canada",g:"Sports",k:"singleplayer,multiplayer"},
+{id:"fifa10",t:"FIFA 10",y:2009,d:"EA Canada",g:"Sports",k:"singleplayer,multiplayer"},
+{id:"fifa11",t:"FIFA 11",y:2010,d:"EA Canada",g:"Sports",k:"singleplayer,multiplayer"},
+{id:"fifa12",t:"FIFA 12",y:2011,d:"EA Vancouver",g:"Sports",k:"singleplayer,multiplayer"},
+{id:"fifa13",t:"FIFA 13",y:2012,d:"EA Vancouver",g:"Sports",k:"singleplayer,multiplayer"},
+{id:"fifa14",t:"FIFA 14",y:2013,d:"EA Vancouver",g:"Sports",k:"multiplayer"},
+{id:"fifa15",t:"FIFA 15",y:2014,d:"EA Vancouver",g:"Sports",k:"multiplayer"},
+{id:"fifa16",t:"FIFA 16",y:2015,d:"EA Vancouver",g:"Sports",k:"multiplayer"},
+{id:"fifa17",t:"FIFA 17",y:2016,d:"EA Vancouver",g:"Sports",k:"multiplayer"},
+{id:"fifa18",t:"FIFA 18",y:2017,d:"EA Vancouver",g:"Sports",k:"multiplayer"},
+{id:"fifa19",t:"FIFA 19",y:2018,d:"EA Vancouver",g:"Sports",k:"multiplayer"},
+{id:"fifa20",t:"FIFA 20",y:2019,d:"EA Vancouver",g:"Sports",k:"multiplayer"},
+{id:"fifa21",t:"FIFA 21",y:2020,d:"EA Vancouver",g:"Sports",k:"multiplayer"},
+{id:"fifa22",t:"FIFA 22",y:2021,d:"EA Vancouver",g:"Sports",k:"multiplayer"},
+{id:"awayout",t:"A Way Out",y:2018,d:"Hazelight Studios",g:"Adventure",k:"multiplayer,co-op,local co-op,story-driven"},
+{id:"machineparty",t:"Machine Party",y:2026,d:"Mike Klubnika; GDeavid",g:"Other",k:"indie,multiplayer,co-op"},
+{id:"shiftatmidnight",t:"Shift at Midnight",y:2026,d:"Bun Muen",g:"Horror",k:"indie,multiplayer,co-op"},
+{id:"partypanic",t:"Party Panic",y:2017,d:"Everglow Interactive",g:"Other",k:"indie,multiplayer,local co-op"},
+{id:"heaveho",t:"Heave Ho",y:2018,d:"Le Cartel Studio",g:"Platformer",k:"indie,singleplayer,multiplayer,co-op,local co-op"},
+{id:"movingout",t:"Moving Out",y:2020,d:"SMG Studio",g:"Simulation",k:"indie,singleplayer,multiplayer,co-op,local co-op"},
+{id:"movingout2",t:"Moving Out 2",y:2023,d:"SMG Studio",g:"Simulation",k:"indie,singleplayer,multiplayer,co-op,local co-op"},
+{id:"gangbeasts",t:"Gang Beasts",y:2017,d:"Boneloaf",g:"Fighting",k:"indie,multiplayer,local co-op"},
+{id:"chickenhorse",t:"Ultimate Chicken Horse",y:2016,d:"Clever Endeavour Games",g:"Platformer",k:"indie,multiplayer,local co-op"},
+{id:"pummelparty",t:"Pummel Party",y:2018,d:"Rebuilt Games",g:"Other",k:"indie,multiplayer,local co-op"},
+{id:"golfwfriends",t:"Golf With Your Friends",y:2020,d:"Blacklight Interactive",g:"Sports",k:"indie,multiplayer"},
+{id:"overcooked1",t:"Overcooked!",y:2016,d:"Ghost Town Games",g:"Simulation",k:"indie,singleplayer,multiplayer,co-op,local co-op"},
+{id:"castlecrashers",t:"Castle Crashers",y:2008,d:"The Behemoth",g:"Action",k:"indie,singleplayer,multiplayer,co-op,local co-op,pixel art"},
+{id:"sackboy",t:"Sackboy: A Big Adventure",y:2020,d:"Sumo Digital",g:"Platformer",k:"singleplayer,multiplayer,co-op,local co-op"},
+{id:"lovers",t:"Lovers in a Dangerous Spacetime",y:2015,d:"Asteroid Base",g:"Action",k:"indie,singleplayer,multiplayer,co-op,local co-op"},
+{id:"keeptalking",t:"Keep Talking and Nobody Explodes",y:2015,d:"Steel Crate Games",g:"Puzzle",k:"indie,multiplayer,co-op"},
+{id:"unrailed",t:"Unrailed!",y:2021,d:"Indoor Astronaut",g:"Simulation",k:"indie,singleplayer,multiplayer,co-op,local co-op"},
+{id:"picopark",t:"PICO PARK",y:2021,d:"TECOPARK",g:"Platformer",k:"indie,multiplayer,co-op,local co-op"},
+{id:"plateup",t:"PlateUp!",y:2022,d:"It's Happening",g:"Simulation",k:"indie,singleplayer,multiplayer,co-op,local co-op"},
+{id:"stickfight",t:"Stick Fight: The Game",y:2017,d:"Landfall",g:"Fighting",k:"indie,multiplayer,local co-op"},
+{id:"tabs",t:"Totally Accurate Battle Simulator",y:2021,d:"Landfall",g:"Strategy",k:"indie,singleplayer,multiplayer"},
+{id:"contentwarning",t:"Content Warning",y:2024,d:"Landfall; Skog; Wilnyl; Zorro",g:"Horror",k:"indie,multiplayer,co-op"},
+{id:"buckshot",t:"Buckshot Roulette",y:2024,d:"Mike Klubnika",g:"Horror",k:"indie,singleplayer,multiplayer,atmospheric"},
+{id:"chainedtogether",t:"Chained Together",y:2024,d:"Anegar Games",g:"Platformer",k:"indie,singleplayer,multiplayer,co-op,hard"},
  ];
 /* Steam App IDs: use Steam's own library artwork where the game has a Steam listing. */
 var STEAM_APP_IDS={
@@ -1786,7 +1959,20 @@ var STEAM_APP_IDS={
   "psychonauts2":607080,
   "minecraftdungeons":1672970,
   "rereq":3764200,
-  "shf":2947440
+  "shf":2947440,
+"awayout":1222700,
+"partypanic":506500,
+"gangbeasts":285900,
+"stickfight":674940,
+"contentwarning":2881650,
+"buckshot":2835570,
+"overcooked1":448510,
+"castlecrashers":204360,
+"keeptalking":341800,
+"golfwfriends":431240,
+"pummelparty":880940,
+"picopark":1509960,
+"chickenhorse":386940
 };
 var GENRES=["RPG","Action","Adventure","Platformer","Puzzle","FPS","Simulation","Roguelike","Horror","Sandbox","Strategy","Racing","Sports","Fighting","Other"];
 var STATUS=[["done","Finished"],["playing","Playing"],["dropped","Dropped"],["wish","Want to play"]];
@@ -2111,7 +2297,7 @@ function normalize(d){
     s.username=typeof d.username==="string"?d.username.slice(0,20):"";
     ["email","salt","hash"].forEach(function(k){if(typeof d[k]==="string")s[k]=d[k].slice(0,200)});
     if(d.profile&&typeof d.profile==="object")["name","loc","web","bio"].forEach(function(k){if(typeof d.profile[k]==="string")s.profile[k]=d.profile[k].slice(0,300)});
-    if(d.profile&&typeof d.profile.avatar==="string"&&d.profile.avatar.length<40000)s.profile.avatar=d.profile.avatar;
+    if(d.profile&&typeof d.profile.avatar==="string"&&okAv(d.profile.avatar))s.profile.avatar=d.profile.avatar;
   }
   return s;
 }
@@ -2314,14 +2500,28 @@ function viewDiary(){
 }
 
 function diaryRows(es,ro){
-  var out="", cur="", tag=ro?"div":"button";
+  var curM="", PENCIL='<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 17.25V21h3.75L17.8 9.94l-3.75-3.75L3 17.25zM20.7 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>';
+  var DOTS='<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>';
+  var REV='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 11h16M4 16h10"/></svg>';
+  var out='<div class="dtable"><div class="dhead-row" role="row"><span>Month</span><span class="c">Day</span><span>Game</span><span class="c">Released</span><span class="c">Rating</span><span class="c">Like</span><span class="c">Review</span><span class="c">Edit</span></div>';
   es=es.slice().sort(function(a,b){return (b.l.date||"").localeCompare(a.l.date||"")});
   es.forEach(function(e){
-    var d=(e.l.date||"").split("-"), key=d[0]+"-"+d[1];
-    if(key!==cur){cur=key;out+='<div class="month"><h2>'+(d[1]?MONTHS[parseInt(d[1],10)-1]+" "+d[0]:"No date")+'</h2></div>'}
-    out+='<'+tag+' class="row'+(ro?" ro":"")+'"'+(ro?"":' data-open="'+esc(e.g.id)+'"')+'><span class="d">'+(d[2]||"–")+'</span>'+cover(e.g,true)+'<span class="main"><span class="tt"><b>'+esc(e.g.t)+'</b><span>'+(e.g.y||"")+'</span></span><span>'+(e.l.rating?stars(e.l.rating):"")+(e.l.liked?' <span class="heart" aria-label="Liked">♥</span>':"")+'</span>'+(e.l.review?'<span class="rv">'+esc(e.l.review)+'</span>':"")+'</span><span class="side"><span class="st '+esc(e.l.status)+(e.l.sample?" sample":"")+'">'+(e.l.sample?"sample":esc(statusLabel(e.l.status)))+'</span><span class="label">'+esc(e.l.platform||"")+'</span></span></'+tag+'>';
+    var d=(e.l.date||"").split("-"), key=d[0]&&d[1]?d[0]+"-"+d[1]:"none";
+    var badge="";
+    if(key!==curM){curM=key;badge=d[1]?'<div class="cal"><b>'+MONTHS[parseInt(d[1],10)-1].slice(0,3)+'</b><span>'+d[0]+'</span></div>':'<div class="cal"><b>–</b><span>No date</span></div>'}
+    var sub=[e.l.sample?"sample":statusLabel(e.l.status),e.l.platform||""].filter(Boolean).map(esc).join(" · ");
+    out+='<div class="drow'+(ro?" ro":"")+'" role="row"'+(ro?"":' data-open="'+esc(e.g.id)+'"')+'>'
+      +'<div class="dm">'+badge+'</div>'
+      +'<div class="dd">'+(d[2]?parseInt(d[2],10):"–")+'</div>'
+      +'<div class="dg">'+cover(e.g,true)+'<span class="dt"><b>'+esc(e.g.t)+'</b><small>'+sub+'</small></span></div>'
+      +'<div class="dy">'+(e.g.y||"")+'</div>'
+      +'<div class="dr c">'+(e.l.rating?stars(e.l.rating):"")+'</div>'
+      +'<div class="dl c">'+(e.l.liked?'<span class="heart" aria-label="Liked">♥</span>':'<span class="noheart" aria-hidden="true">♥</span>')+'</div>'
+      +'<div class="dv c">'+(e.l.review?'<span title="Has review">'+REV+'</span>':"")+'</div>'
+      +'<div class="de">'+(ro?"":'<button class="dbtn" type="button" data-edit="'+esc(e.g.id)+'" aria-label="Edit">'+PENCIL+'</button><button class="dbtn" type="button" data-open="'+esc(e.g.id)+'" aria-label="Open">'+DOTS+'</button>')+'</div>'
+      +'</div>';
   });
-  return out;
+  return out+'</div>';
 }
 
 /* ---------- people ---------- */
@@ -2344,9 +2544,29 @@ function entriesFavs(data,ids){
   }).filter(Boolean).slice(0,4);
 }
 function personName(id){if(id===myId&&state.username)return state.username;var f=findPerson(id);if(f&&f.data&&f.data.username)return f.data.username;var p=profs[id];return (p&&p.name)||(id===myId?"You":"Gameboxd member")}
-function okAv(a){return typeof a==="string"&&a.length<40000&&/^data:image\/jpeg;base64,[A-Za-z0-9+\/=]+$/.test(a)?a:""}
+function okAv(a){
+  if(typeof a!=="string")return "";
+  if(a.length<150000&&/^data:image\/jpeg;base64,[A-Za-z0-9+\/=]+$/.test(a))return a;
+  var base=String(CFG.url||"").trim().replace(/\/+$/,"")+"/storage/v1/object/public/avatars/";
+  return a.length<400&&a.indexOf(base)===0&&/^[A-Za-z0-9\/._~:@+=?&%-]+$/.test(a.slice(base.length))?a:"";
+}
+/* upload the avatar to Supabase Storage (bucket "avatars", one file per user); returns the public URL, or the original data URL if upload isn't possible */
+async function uploadAvatar(dataUrl){
+  if(!sb||!myId||!/^data:image\/jpeg;base64,/.test(dataUrl))return dataUrl;
+  try{
+    var bin=atob(dataUrl.split(",")[1]),arr=new Uint8Array(bin.length);
+    for(var i=0;i<bin.length;i++)arr[i]=bin.charCodeAt(i);
+    var path=myId+"/avatar.jpg";
+    var r=await sb.storage.from("avatars").upload(path,new Blob([arr],{type:"image/jpeg"}),{upsert:true,contentType:"image/jpeg",cacheControl:"3600"});
+    if(r.error)throw r.error;
+    var u=sb.storage.from("avatars").getPublicUrl(path).data.publicUrl+"?v="+Date.now();
+    return okAv(u)?u:dataUrl;
+  }catch(e){logErr("avatar upload",e);return dataUrl}
+}
 function avSrc(id){var a="";if(id===myId||id==="me")a=okAv((state.profile||{}).avatar);if(!a){var f=findPerson(id);if(f&&f.data&&f.data.profile)a=okAv(f.data.profile.avatar)}if(!a){var p=profs[id];a=(p&&p.avatarUrl)||""}return a}
-function avatar(id,cls){var u=avSrc(id);return u?'<img'+(cls?' class="'+cls+'"':"")+' src="'+esc(u)+'" alt="">':""}
+function avatar(id,cls){var u=avSrc(id);return u?'<img'+(cls?' class="'+cls+'"':"")+' src="'+esc(u)+'" alt="" decoding="async"'+(cls==="av"?"":' loading="lazy"')+'>':""}
+/* profile header avatar: falls back to a silhouette when there is no photo */
+function avatarHead(id){return avatar(id,"av")||'<span class="av av-ph" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="9" r="4.2" fill="currentColor"/><path d="M3.5 22c.8-5 4.2-7.5 8.5-7.5s7.7 2.5 8.5 7.5z" fill="currentColor"/></svg></span>'}
 function followersOf(id){return followersList(id).length}
 async function loadPeople(){
   try{await ready}catch(e){}
@@ -2406,11 +2626,11 @@ function viewPeople(){
   var followers=followersList(myId),fl=followingList();
   out+='<div class="pcard"><div><b>'+(state.public?"Your profile is public":"Your profile is private")+' · '+followers.length+' followers</b><p>'+(state.public?"Your public profile lets other players discover your shared games, reviews and lists.":"Share your profile so other players can discover you and follow your activity.")+'</p></div><button class="btn'+(state.public?" ghost":"")+'" data-togglepublic="1">'+(state.public?"Hide profile":"Share my profile")+'</button></div>';
   out+='<div class="field" style="margin-bottom:6px"><label class="label" for="psearch">Find people</label><input id="psearch" type="search" autocomplete="off" placeholder="Type a username…" value="'+esc(ui.psq)+'"></div><div id="presults" aria-live="polite">'+hitsHtml()+'</div>';
-  out+='<div class="sec" style="margin-top:28px"><h2>Following</h2><span class="label">'+fl.length+'</span></div>';
+  out+='<div class="sec" id="sec-following" style="margin-top:28px"><h2>Following</h2><span class="label">'+fl.length+'</span></div>';
   if(people===null)out+='<p class="label">Loading following…</p>';
   else if(!fl.length)out+='<div class="empty"><h3>You’re not following anyone yet</h3><p>Search for a username above and press Follow. You can also choose Users in the main search bar.</p></div>';
   else out+=memberCards(fl.filter(function(id){return id!==myId}));
-  out+='<div class="sec" style="margin-top:30px"><h2>Followers</h2><span class="label">'+followers.length+'</span></div>';
+  out+='<div class="sec" id="sec-followers" style="margin-top:30px"><h2>Followers</h2><span class="label">'+followers.length+'</span></div>';
   if(people===null)out+='<p class="label">Loading followers…</p>';
   else if(!followers.length)out+='<div class="empty"><h3>No followers yet</h3><p>When other Gameboxd members follow your profile, they’ll appear here.</p></div>';
   else out+=memberCards(followers);
@@ -2471,22 +2691,10 @@ function reviewsHtml(rs){
   return rs.map(function(e){return revBlock(myId,e,true)}).join("");
 }
 function profileSortToolbar(){
-  var opts=[['year','Newest'],['old','Oldest'],['az','A–Z'],['popularity','Game popularity'],['metascore-high','Highest Metacritic score'],['metascore-low','Lowest Metacritic score']];
-  return '<div class="tools profile-tools"><span class="label">Sort by</span><select class="sort" id="profile-sort" aria-label="Sort profile games">'+opts.map(function(o){return '<option value="'+o[0]+'"'+(ui.profileSort===o[0]?' selected':'')+'>'+o[1]+'</option>'}).join('')+'</select></div>';
+  return '<div class="tools profile-tools"><span class="label">Sort by</span><select class="sort" id="profile-sort" aria-label="Sort profile games">'+sortOptions(ui.profileSort,true)+'</select></div>';
 }
 function sortProfileEntries(es){
-  return es.slice().sort(function(a,b){
-    if(ui.profileSort==='az')return a.g.t.localeCompare(b.g.t);
-    if(ui.profileSort==='old')return (a.g.y||0)-(b.g.y||0)||a.g.t.localeCompare(b.g.t);
-    if(ui.profileSort==='popularity')return popularRank(a.g)-popularRank(b.g)||a.g.t.localeCompare(b.g.t);
-    if(ui.profileSort==='metascore-high'||ui.profileSort==='metascore-low'){
-      var ra=METACRITIC_SCORES[a.g.id],rb=METACRITIC_SCORES[b.g.id],ha=ra!=null,hb=rb!=null;
-      if(ha!==hb)return ha?-1:1;
-      if(ha&&ra!==rb)return ui.profileSort==='metascore-high'?rb-ra:ra-rb;
-      return popularRank(a.g)-popularRank(b.g)||a.g.t.localeCompare(b.g.t);
-    }
-    return (b.g.y||0)-(a.g.y||0)||a.g.t.localeCompare(b.g.t);
-  });
+  return es.slice().sort(sortCmp(ui.profileSort));
 }
 function gridOf(es,title){
   es=sortProfileEntries(es);
@@ -2503,8 +2711,56 @@ function followingStrip(){
   if(!ids.length)return out+'<p class="foot" style="margin:0 0 28px">You’re not following anyone yet. <a class="chip" href="#insanlar" data-tab="insanlar">Find people</a></p>';
   return out+'<div class="fstrip">'+ids.map(function(id){
     var u=avSrc(id),nm=personName(id);
-    return '<button type="button" class="fav-av" data-profile="'+esc(id)+'" title="'+esc(nm)+'" aria-label="'+esc(nm)+'">'+(u?'<img src="'+esc(u)+'" alt="">':'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="9" r="4.2" fill="currentColor"/><path d="M3.5 22c.8-5 4.2-7.5 8.5-7.5s7.7 2.5 8.5 7.5z" fill="currentColor"/></svg>')+'</button>';
+    return '<button type="button" class="fitem" data-profile="'+esc(id)+'" title="'+esc(nm)+'" aria-label="'+esc(nm)+'"><span class="fav-av">'+(u?'<img src="'+esc(u)+'" alt="">':'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="9" r="4.2" fill="currentColor"/><path d="M3.5 22c.8-5 4.2-7.5 8.5-7.5s7.7 2.5 8.5 7.5z" fill="currentColor"/></svg>')+'</span><span class="fname">'+esc(nm)+'</span></button>';
   }).join('')+'</div>';
+}
+function sideMe(es){
+  var DAYS=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+  var dt=function(s){var d=(s||"").split("-");return d[2]?new Date(+d[0],+d[1]-1,+d[2]):null};
+  var byDate=es.slice().sort(function(a,b){return (b.l.date||"").localeCompare(a.l.date||"")});
+  var out='';
+  /* wishlist */
+  var wl=wishEntries();
+  out+='<section class="sb"><div class="sec"><h2>Wishlist</h2><a class="chip" href="#istek" data-tab="istek">'+wl.length+'</a></div>';
+  out+=wl.length?'<div class="sb-wish">'+wl.slice(0,6).map(function(e){return '<button type="button" class="sb-w" data-open="'+esc(e.g.id)+'" title="'+esc(e.g.t)+'" aria-label="'+esc(e.g.t)+'">'+cover(e.g,true)+'</button>'}).join("")+'</div>':'<p class="label">Nothing on your wishlist yet.</p>';
+  out+='</section>';
+  /* diary */
+  out+='<section class="sb"><div class="sec"><h2>Diary</h2><a class="chip" href="#gundelik" data-tab="gundelik">'+es.length+'</a></div>';
+  if(byDate.length){
+    var lastM="";
+    out+='<div class="sb-diary">'+byDate.slice(0,8).map(function(e){
+      var d=dt(e.l.date),m=d?d.getFullYear()+"-"+d.getMonth():"",head="";
+      if(m!==lastM){lastM=m;head='<div class="sb-month"><span class="sb-cal" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22"><rect x="3" y="5" width="18" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M3 10h18M8 3v4M16 3v4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><b>'+(d?MONTHS[d.getMonth()].slice(0,3).toUpperCase():"")+'</b></span></div>'}
+      return head+'<button type="button" class="sb-d" data-open="'+esc(e.g.id)+'"><span class="sb-day">'+(d?d.getDate():"–")+'</span><span class="sb-t">'+esc(e.g.t)+'</span></button>';
+    }).join("")+'</div>';
+  }else out+='<p class="label">No diary entries yet.</p>';
+  out+='</section>';
+  /* ratings */
+  var rated=es.filter(function(e){return e.l.rating>0}),hist=[0,0,0,0,0,0,0,0,0,0];
+  rated.forEach(function(e){hist[e.l.rating-1]++});
+  var hmax=Math.max.apply(null,hist.concat([1])),av=avg(es);
+  out+='<section class="sb"><div class="sec"><h2>Ratings</h2><span class="label">'+rated.length+'</span></div>';
+  out+=rated.length?'<div class="sb-rate"><span class="sb-star" aria-hidden="true">★</span><div class="sb-bars" role="img" aria-label="Rating distribution, average '+av.toFixed(1)+' out of 5">'+hist.map(function(n,i){return '<span title="'+((i+1)/2)+'★: '+n+'" style="height:'+(n?Math.max(6,Math.round(n/hmax*100)):3)+'%"></span>'}).join("")+'</div><span class="sb-star five" aria-hidden="true">★★★★★</span></div><p class="label sb-avg">Average <b>'+av.toFixed(1)+'</b> / 5</p>':'<p class="label">Rate a game to see the distribution.</p>';
+  out+='</section>';
+  /* recent lists */
+  var ls=myLists();
+  if(ls.length){
+    out+='<section class="sb"><div class="sec"><h2>Recent lists</h2><a class="chip" href="#lists" data-tab="lists">'+ls.length+'</a></div>';
+    out+=ls.slice(-2).reverse().map(function(l){
+      var gs=gamesOfList(l);
+      return '<button type="button" class="sb-list" data-viewlist="me|'+esc(l.id)+'"><span class="sb-stack">'+(gs.length?gs.slice(0,5).map(function(g,i){return '<span style="left:'+(i*22)+'px;z-index:'+(9-i)+'">'+cover(g,true)+'</span>'}).join(""):'<span class="sb-empty"></span>')+'</span><b>'+esc(l.name)+'</b><span class="label">'+gs.length+' games</span></button>';
+    }).join("");
+    out+='</section>';
+  }
+  /* activity */
+  out+='<section class="sb"><div class="sec"><h2>Activity</h2>'+(es.length>5?'<a class="chip" href="#fealiyyet" data-tab="fealiyyet">All</a>':'')+'</div>';
+  out+=byDate.length?'<ul class="sb-act">'+byDate.slice(0,5).map(function(e){
+    var d=dt(e.l.date),vb=({done:"finished",playing:"played",dropped:"dropped",wish:"added"})[e.l.status]||"logged";
+    var ds=d?" on "+DAYS[d.getDay()]+", "+MONTHS[d.getMonth()].slice(0,3)+" "+d.getDate()+", "+d.getFullYear():"";
+    return '<li><button type="button" data-open="'+esc(e.g.id)+'">You '+vb+(e.l.rating?" and rated":"")+' <b>'+esc(e.g.t)+'</b>'+(e.l.rating?' '+stars(e.l.rating):'')+'<span class="label">'+esc(ds.replace(/^ on /,""))+'</span></button></li>';
+  }).join("")+'</ul>':'<p class="label">No activity yet.</p>';
+  out+='</section>';
+  return out;
 }
 function viewMe(){
   var es=diaryEntries();
@@ -2518,7 +2774,7 @@ function viewMe(){
     out+='<div class="sec"><h2>Popular reviews</h2>'+(rv.length>2?'<a class="chip" href="#reyler" data-tab="reyler">More</a>':'<span class="label">'+rv.length+'</span>')+'</div>'+top.map(function(e){return revBlock(myId,e,true)}).join("");
   }
   out+=followingStrip();
-  return out;
+  return '<div class="megrid"><div class="memain">'+out+'</div><aside class="meside" aria-label="Profile summary">'+sideMe(es)+'</aside></div>';
 }
 var PTABS=[["profilim","Profile"],["fealiyyet","Activity"],["oyunlarim","Games"],["gundelik","Diary"],["reyler","Reviews"],["istek","Wishlist"],["lists","Lists"],["beyenilen","Likes"],["statistika","Stats"]];
 var STAB={finished:"done",playing:"playing",dropped:"dropped",wanttoplay:"wish"};
@@ -2570,9 +2826,8 @@ function bfBtn(key,label){
   return '<div class="pf-wrap"><button type="button" class="pf-btn'+(v?' active':'')+'" data-bfmenu="'+key+'" aria-expanded="'+open+'" aria-haspopup="true">'+esc(txt)+'<svg viewBox="0 0 10 6" width="9" height="6" aria-hidden="true"><path d="M1 1l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>'+(open?bfMenu(key):'')+'</div>';
 }
 function bfBar(){
-  var opts=[['year','Release date'],['old','Oldest'],['az','A–Z'],['popularity','Game popularity'],['metascore-high','Highest Metacritic score'],['metascore-low','Lowest Metacritic score']];
   return '<div class="pf-bar">'+bfBtn("decade","Decade")+bfBtn("genre","Genre")+bfBtn("plat","Service")+bfBtn("stat","My status")+bfBtn("dev","Developer")+bfBtn("tag","Tag")+
-   '<label class="pf-sort"><span>Sort by</span><select class="sort" id="sort" aria-label="Sort">'+opts.map(function(o){return '<option value="'+o[0]+'"'+(ui.sort===o[0]?' selected':'')+'>'+o[1]+'</option>'}).join('')+'</select></label>'+
+   '<label class="pf-sort"><span>Sort by</span><select class="sort" id="sort" aria-label="Sort">'+sortOptions(ui.sort,false)+'</select></label>'+
    '<button type="button" class="pf-eye'+(ui.bf.hide?' off':'')+'" data-bfeye="1" aria-pressed="'+ui.bf.hide+'" aria-label="Show or hide ratings and status on covers" title="Show/hide ratings on covers"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M1.5 12S5.5 5 12 5s10.5 7 10.5 7-4 7-10.5 7S1.5 12 1.5 12z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><circle cx="12" cy="12" r="3.2" fill="currentColor"/>'+(ui.bf.hide?'<path d="M3 3l18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>':'')+'</svg></button></div>';
 }
 document.addEventListener("click",function(e){
@@ -2590,7 +2845,7 @@ function pfEntries(){
     var l=e.l,g=e.g;
     if(f.status?l.status!==f.status:l.status==="wish")return false;
     if(f.norate&&l.rating)return false;
-    if(f.rmin&&!(l.rating>=f.rmin*2-1&&l.rating<=f.rmax*2))return false;
+    if(f.rmin&&!(l.rating>=f.rmin&&l.rating<=f.rmax))return false;
     if(f.decade&&String(Math.floor((g.y||0)/10)*10)!==f.decade)return false;
     if(f.genre&&g.g!==f.genre)return false;
     if(f.plat&&l.platform!==f.plat)return false;
@@ -2600,7 +2855,7 @@ function pfEntries(){
 }
 function pfStars(){
   var f=ui.pf,h='<div class="pf-stars" role="group" aria-label="Rating range">';
-  for(var i=1;i<=5;i++)h+='<button type="button" class="pf-star'+(f.rmin&&i>=f.rmin&&i<=f.rmax?' on':'')+'" data-pfstar="'+i+'" aria-label="'+i+' star">★</button>';
+  for(var i=1;i<=5;i++){var lo=f.rmin&&2*i-1>=f.rmin&&2*i-1<=f.rmax, hi=f.rmin&&2*i>=f.rmin&&2*i<=f.rmax;h+='<button type="button" class="pf-star" style="--f:'+(hi?100:lo?50:0)+'%" data-pfstar="'+i+'" aria-label="'+i+' star (click left half for half a star)">★</button>';}
   return h+'</div>';
 }
 function pfMenu(key){
@@ -2610,7 +2865,7 @@ function pfMenu(key){
   else if(key==="rating"){
     h+='<button type="button" class="pf-item'+(!f.rmin&&!f.norate?' sel':'')+'" data-pfrate="any">Any rating</button>';
     h+='<button type="button" class="pf-item'+(f.norate?' sel':'')+'" data-pfrate="none">No rating</button>';
-    h+='<div class="pf-sep"></div><div class="label pf-cap">Rating (or range)</div>'+pfStars()+'<div class="pf-hint">'+(f.pend?'Now click a second star':'Click a star, then another to define a range')+'</div>';
+    h+='<div class="pf-sep"></div><div class="label pf-cap">Rating (or range)</div>'+pfStars()+'<div class="pf-hint">'+(f.pend?'Now click a second star':'Click a star (left half = ½), then another to define a range')+'</div>';
   }
   else if(key==="decade"){
     var ds={};all.forEach(function(e){if(e.g.y)ds[Math.floor(e.g.y/10)*10]=1});
@@ -2634,7 +2889,7 @@ function pfMenu(key){
 function pfBtn(key,label){
   var f=ui.pf,open=f.open===key,active=false,txt=label;
   if(key==="status"&&f.status){active=true;txt=statusLabel(f.status)}
-  if(key==="rating"){if(f.norate){active=true;txt="No rating"}else if(f.rmin){active=true;txt=f.rmin===f.rmax?f.rmin+"★":f.rmin+"–"+f.rmax+"★"}}
+  if(key==="rating"){if(f.norate){active=true;txt="No rating"}else if(f.rmin){active=true;txt=f.rmin===f.rmax?f.rmin/2+"★":f.rmin/2+"–"+f.rmax/2+"★"}}
   if(key==="decade"&&f.decade){active=true;txt=f.decade+"s"}
   if(key==="genre"&&f.genre){active=true;txt=f.genre}
   if(key==="plat"&&f.plat){active=true;txt=f.plat}
@@ -2642,9 +2897,8 @@ function pfBtn(key,label){
   return '<div class="pf-wrap"><button type="button" class="pf-btn'+(active?' active':'')+'" data-pfmenu="'+key+'" aria-expanded="'+open+'" aria-haspopup="true">'+esc(txt)+'<svg viewBox="0 0 10 6" width="9" height="6" aria-hidden="true"><path d="M1 1l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>'+(open?pfMenu(key):'')+'</div>';
 }
 function pfBar(){
-  var opts=[['year','Release date'],['old','Oldest'],['az','A–Z'],['popularity','Popularity'],['metascore-high','Metascore ↓'],['metascore-low','Metascore ↑']];
   return '<div class="pf-bar">'+pfBtn("status","Status")+pfBtn("rating","Rating")+pfBtn("decade","Decade")+pfBtn("genre","Genre")+pfBtn("plat","Service")+pfBtn("tag","Tag")+
-   '<label class="pf-sort"><span>Sort by</span><select id="profile-sort" aria-label="Sort games">'+opts.map(function(o){return '<option value="'+o[0]+'"'+(ui.profileSort===o[0]?' selected':'')+'>'+o[1]+'</option>'}).join('')+'</select></label>'+
+   '<label class="pf-sort"><span>Sort by</span><select id="profile-sort" aria-label="Sort games">'+sortOptions(ui.profileSort,true)+'</select></label>'+
    '<button type="button" class="pf-eye'+(ui.pf.hide?' off':'')+'" data-pfeye="1" aria-pressed="'+ui.pf.hide+'" aria-label="Show or hide ratings and status on covers" title="Show/hide ratings on covers"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M1.5 12S5.5 5 12 5s10.5 7 10.5 7-4 7-10.5 7S1.5 12 1.5 12z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><circle cx="12" cy="12" r="3.2" fill="currentColor"/>'+(ui.pf.hide?'<path d="M3 3l18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>':'')+'</svg></button></div>';
 }
 function viewGames(){
@@ -2661,7 +2915,7 @@ document.addEventListener("click",function(e){
   if(t=e.target.closest("[data-pfset]")){f[t.dataset.pfset]=t.dataset.val;f.open="";render();return}
   if(t=e.target.closest("[data-pfrate]")){f.rmin=f.rmax=0;f.pend=false;f.norate=t.dataset.pfrate==="none";f.open="";render();return}
   if(t=e.target.closest("[data-pfstar]")){
-    var n=+t.dataset.pfstar;f.norate=false;
+    var r0=t.getBoundingClientRect(), n=+t.dataset.pfstar*2-((e.clientX-r0.left)<r0.width/2?1:0);f.norate=false;
     if(!f.pend){f.rmin=f.rmax=n;f.pend=true}
     else{var a=f.rmin;f.rmin=Math.min(a,n);f.rmax=Math.max(a,n);f.pend=false;f.open=""}
     render();return;
@@ -2674,8 +2928,9 @@ function shell(tab){
   var es=diaryEntries(), yr=String(new Date().getFullYear());
   var thisYear=es.filter(function(e){return (e.l.date||"").indexOf(yr)===0}).length;
   var nm=state.username||(profs[myId]&&profs[myId].name)||"Profilim";
-  var stats='<div><b>'+es.length+'</b><span>Games</span></div><div><b>'+thisYear+'</b><span>This year</span></div><div><b>'+myLists().length+'</b><span>Lists</span></div>'+'<div><b>'+followingList().length+'</b><span>Following</span></div><div><b>'+(myId&&people?followersOf(myId):0)+'</b><span>Followers</span></div>';
-  var out='<div class="ph">'+avatar(myId||"me","av")+'<div class="pinfo"><div class="pname"><h1>'+esc(nm)+'</h1><button class="btn ghost" data-editprofile="1">Edit profile</button></div>'+profMeta(state.profile)+'</div><div class="pstats">'+stats+'</div></div>';
+  var PS=function(go,n,l){return '<button type="button" class="ps" data-pstat="'+go+'"><b>'+n+'</b><span>'+l+'</span></button>'};
+  var stats=PS("oyunlarim",es.length,"Games")+PS("gundelik",thisYear,"This year")+PS("lists",myLists().length,"Lists")+PS("insanlar:sec-following",followingList().length,"Following")+PS("insanlar:sec-followers",(myId&&people?followersOf(myId):0),"Followers");
+  var out='<div class="ph">'+avatarHead(myId||"me")+'<div class="pinfo"><div class="pname"><h1>'+esc(nm)+'</h1><button class="btn ghost" data-editprofile="1">Edit profile</button></div>'+profMeta(state.profile)+'</div><div class="pstats">'+stats+'</div></div>';
   out+='<nav class="subnav" aria-label="Profile sections"><div class="subnav-in">'+PTABS.map(function(t){return '<a href="#'+t[0]+'" data-tab="'+t[0]+'"'+(t[0]===(STAB[tab]?"oyunlarim":tab)?' aria-current="page"':"")+'>'+t[1]+'</a>'}).join("")+'</div><button type="button" class="subnav-s" data-focussearch="1" aria-label="Search"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M15.5 15.5 21 21" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></button></nav>';
   return out+'<div class="shellbody">'+tabBody(tab)+'</div>';
 }
@@ -2701,20 +2956,23 @@ function viewProfile(){
   var p=findPerson(ui.profile);
   var back='<button class="back" data-go="insanlar">← Members</button>';
   var fb=ui.profile&&ui.profile!==myId?followBtn(ui.profile):"";
-  if(!p||!p.data.public)return back+'<div class="ph">'+avatar(ui.profile,"av")+'<h1>'+esc(personName(ui.profile))+'</h1><span class="fb">'+fb+'</span></div><div class="empty"><h3>Profile not shared</h3><p>This person hasn’t shared their profile yet. Follow them and you’ll see it here once they do.</p></div>';
+  if(!p||!p.data.public)return back+'<div class="ph">'+avatarHead(ui.profile)+'<h1>'+esc(personName(ui.profile))+'</h1><span class="fb">'+fb+'</span></div><div class="empty"><h3>Profile not shared</h3><p>This person hasn’t shared their profile yet. Follow them and you’ll see it here once they do.</p></div>';
   var es=entriesOf(p.data).filter(function(e){return e.l.status!=="wish"});
   var a=avg(es), top=topOf(es,4);
   var fids=Array.isArray(p.data.favs)?p.data.favs:[], fgs=entriesFavs(p.data,fids);
   var fing=followingOf(p.id).length;
-  var stats='<div><b>'+es.length+'</b><span>Games</span></div><div><b>'+(a?a.toFixed(1):"–")+'</b><span>Avg</span></div><div><b>'+fing+'</b><span>Following</span></div><div><b>'+followersOf(p.id)+'</b><span>Followers</span></div>';
-  var out=back+'<div class="ph">'+avatar(p.id,"av")+'<div class="pinfo"><div class="pname"><h1>'+esc(personName(p.id))+'</h1><span class="fb">'+fb+'</span></div>'+profMeta(p.data.profile)+'</div><div class="pstats">'+stats+'</div></div>';
+  if(ui.pviewFor!==p.id){ui.pviewFor=p.id;ui.pview=""}
+  var PS=function(go,n,l,on){return '<button type="button" class="ps" data-pstat="'+go+'"'+(on!==undefined?' aria-pressed="'+on+'"':'')+'><b>'+n+'</b><span>'+l+'</span></button>'};
+  var stats=PS("sec-pdiary",es.length,"Games")+'<div><b>'+(a?a.toFixed(1):"–")+'</b><span>Avg</span></div>'+PS("pview:following",fing,"Following",ui.pview==="following")+PS("pview:followers",followersOf(p.id),"Followers",ui.pview==="followers");
+  var out=back+'<div class="ph">'+avatarHead(p.id)+'<div class="pinfo"><div class="pname"><h1>'+esc(personName(p.id))+'</h1><span class="fb">'+fb+'</span></div>'+profMeta(p.data.profile)+'</div><div class="pstats">'+stats+'</div></div>';
+  if(ui.pview){var pl=ui.pview==="following"?followingOf(p.id):followersList(p.id);out+='<div class="sec" id="sec-pview"><h2>'+(ui.pview==="following"?"Following":"Followers")+'</h2><span class="label">'+pl.length+'</span></div>'+(people===null?'<p class="label">Loading…</p>':pl.length?memberCards(pl):'<div class="empty"><h3>'+(ui.pview==="following"?"Not following anyone yet":"No followers yet")+'</h3></div>');}
   if(fgs.length)out+='<div class="sec"><h2>Favorite games</h2></div><div class="favs">'+fgs.map(function(g){return gameCard(g,(p.data.logs&&p.data.logs[g.id])||null,true)}).join("")+'</div>';
   else if(top.length)out+='<div class="sec"><h2>Top rated</h2></div><div class="favs">'+top.map(function(e){return gameCard(e.g,e.l,true)}).join("")+'</div>';
   var pls=Array.isArray(p.data.lists)?p.data.lists:[];
   if(pls.length)out+='<div class="sec"><h2>Lists</h2><span class="label">'+pls.length+'</span></div><div class="people" style="margin-bottom:28px">'+pls.map(function(l){return listCard(p.id,l,p.data)}).join("")+'</div>';
   var prs=es.filter(function(e){return e.l.review});
   if(prs.length)out+='<div class="sec"><h2>Reviews</h2><span class="label">'+prs.length+'</span></div>'+prs.map(function(e){return revBlock(p.id,e,false)}).join("");
-  out+='<div class="sec"><h2>Diary</h2><span class="label">'+es.length+'</span></div>'+diaryRows(es,true);
+  out+='<div class="sec" id="sec-pdiary"><h2>Diary</h2><span class="label">'+es.length+'</span></div>'+diaryRows(es,true);
   return out;
 }
 
@@ -2859,7 +3117,7 @@ $("#e-file").addEventListener("change",function(e){
   var f=e.target.files[0];if(!f)return;
   var fr=new FileReader();
   fr.onload=function(){var img=new Image();
-    img.onload=function(){var n=Math.min(img.width,img.height),c=document.createElement("canvas");c.width=c.height=160;c.getContext("2d").drawImage(img,(img.width-n)/2,(img.height-n)/2,n,n,0,0,160,160);pendAv=c.toDataURL("image/jpeg",0.82);showAvPrev(pendAv);$("#e-err").textContent=""};
+    img.onload=function(){var n=Math.min(img.width,img.height),c=document.createElement("canvas");var S=Math.min(640,n);c.width=c.height=S;var cx=c.getContext("2d");cx.imageSmoothingQuality="high";cx.drawImage(img,(img.width-n)/2,(img.height-n)/2,n,n,0,0,S,S);var q=0.88;pendAv=c.toDataURL("image/jpeg",q);while(pendAv.length>140000&&q>0.4){q-=0.08;pendAv=c.toDataURL("image/jpeg",q)}showAvPrev(pendAv);$("#e-err").textContent=""};
     img.onerror=function(){$("#e-err").textContent="Couldn’t read that image. Pick another."};
     img.src=fr.result};
   fr.readAsDataURL(f);
@@ -2872,7 +3130,9 @@ $("#eform").addEventListener("submit",async function(e){
   var er=$("#e-err");er.textContent="";
   var pr={name:$("#e-name").value.trim(),loc:$("#e-loc").value.trim(),web:$("#e-web").value.trim(),bio:$("#e-bio").value.trim()};
   if(pr.web&&!/^https?:\/\//i.test(pr.web))pr.web="https://"+pr.web;
-  var av=pendAv===undefined?okAv((state.profile||{}).avatar):pendAv;if(av)pr.avatar=av;
+  var av=pendAv===undefined?okAv((state.profile||{}).avatar):pendAv;
+  if(av&&av.indexOf("data:")===0){var sbtn=$("#eform button[type=submit]");if(sbtn)sbtn.disabled=true;av=await uploadAvatar(av);if(sbtn)sbtn.disabled=false}
+  if(av)pr.avatar=av;
   state.profile=pr;
   var pub=db?$("#e-pub").checked:state.public, ch=pub!==state.public;
   state.public=pub;save();closeEdit();
@@ -2925,19 +3185,43 @@ var METACRITIC_SCORES={
 };
 function popularGames(){return POPULAR_GAME_IDS.map(gameById).filter(Boolean)}
 function popularRank(g){var i=POPULAR_GAME_IDS.indexOf(g.id);return i<0?100000+i:i}
+var SORT_GROUPS=[
+  ['Name',[['az','A–Z'],['za','Z–A']],0],
+  ['Popularity',[['popularity','Most popular first']],0],
+  ['Shuffle',[['shuffle','Random order']],0],
+  ['When added',[['added-new','Newest first'],['added-old','Earliest first']],1],
+  ['Release date',[['year','Newest first'],['old','Earliest first']],0],
+  ['Metacritic score',[['metascore-high','Highest first'],['metascore-low','Lowest first']],0],
+  ['Your rating',[['rating-high','Highest first'],['rating-low','Lowest first']],0],
+  ['Game length',[['hours-short','Shortest first'],['hours-long','Longest first']],1]
+];
+function sortOptions(cur,personal){
+  function opt(o,txt){return '<option value="'+o[0]+'"'+(cur===o[0]?' selected':'')+'>'+txt+'</option>'}
+  return SORT_GROUPS.filter(function(g){return personal||!g[2]}).map(function(g){
+    if(g[1].length===1)return opt(g[1][0],g[0]);
+    return '<optgroup label="'+g[0]+'">'+g[1].map(function(o){return opt(o,o[1])}).join('')+'</optgroup>';
+  }).join('');
+}
+function shuffleKey(id){var t=String(ui.shuffleSeed||"")+id,h=2166136261;for(var i=0;i<t.length;i++){h^=t.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
+function sortCmp(sort){
+  function tie(a,b){return popularRank(a.g)-popularRank(b.g)||a.g.t.localeCompare(b.g.t)}
+  function num(get,desc){return function(a,b){var x=get(a),y=get(b),hx=x!=null,hy=y!=null;if(hx!==hy)return hx?-1:1;if(hx&&x!==y)return desc?y-x:x-y;return tie(a,b)}}
+  switch(sort){
+    case "popularity":return function(a,b){return popularRank(a.g)-popularRank(b.g)||a.g.t.localeCompare(b.g.t)};
+    case "az":return function(a,b){return a.g.t.localeCompare(b.g.t)};
+    case "za":return function(a,b){return b.g.t.localeCompare(a.g.t)};
+    case "shuffle":return function(a,b){return shuffleKey(a.g.id)-shuffleKey(b.g.id)};
+    case "old":return function(a,b){return (a.g.y||0)-(b.g.y||0)||a.g.t.localeCompare(b.g.t)};
+    case "metascore-high":case "metascore-low":return num(function(x){var v=METACRITIC_SCORES[x.g.id];return v==null?null:v},sort==="metascore-high");
+    case "rating-high":case "rating-low":return num(function(x){return x.l&&x.l.rating>0?x.l.rating:null},sort==="rating-high");
+    case "hours-short":case "hours-long":return num(function(x){return x.l&&x.l.hours>0?x.l.hours:null},sort==="hours-long");
+    case "added-new":case "added-old":return num(function(x){var d=x.l&&x.l.date?parseInt(String(x.l.date).replace(/-/g,""),10):NaN;return isNaN(d)?null:d},sort==="added-new");
+  }
+  return function(a,b){return (b.g.y||0)-(a.g.y||0)||a.g.t.localeCompare(b.g.t)};
+}
 function sortGameList(list,sort){
-  list.sort(function(a,b){
-    if(sort==="popularity")return popularRank(a)-popularRank(b)||a.t.localeCompare(b.t);
-    if(sort==="metascore-high"||sort==="metascore-low"){
-      var ra=METACRITIC_SCORES[a.id],rb=METACRITIC_SCORES[b.id],ha=ra!=null,hb=rb!=null;
-      if(ha!==hb)return ha?-1:1;
-      if(ha&&ra!==rb)return sort==="metascore-high"?rb-ra:ra-rb;
-      return popularRank(a)-popularRank(b)||a.t.localeCompare(b.t);
-    }
-    if(sort==="az")return a.t.localeCompare(b.t);
-    if(sort==="old")return (a.y||0)-(b.y||0)||a.t.localeCompare(b.t);
-    return (b.y||0)-(a.y||0)||a.t.localeCompare(b.t);
-  });
+  var w=list.map(function(g){return {g:g,l:state.logs[g.id]}}).sort(sortCmp(sort));
+  for(var i=0;i<w.length;i++)list[i]=w[i].g;
   return list;
 }
 function recommendationResults(limit){
@@ -3378,6 +3662,17 @@ document.addEventListener("click",function(e){if(!e.target.closest(".umenu"))clo
 document.addEventListener("keydown",function(e){if(e.key==="Escape"&&!umenu.hidden){closeMenu();ubtn.focus()}});
 
 /* ---------- events ---------- */
+function scrollSect(){var id=ui.sect;ui.sect="";if(!id)return;setTimeout(function(){var el=document.getElementById(id);if(el)el.scrollIntoView({behavior:"smooth",block:"start"})},60)}
+document.addEventListener("click",function(e){
+  var b=e.target.closest("[data-pstat]");if(!b)return;
+  e.preventDefault();
+  var v=b.dataset.pstat,a=v.split(":");
+  if(a[0]==="pview"){ui.pview=ui.pview===a[1]?"":a[1];render();if(ui.pview){ui.sect="sec-pview";scrollSect()}return}
+  if(a[0]==="sec-pdiary"){ui.sect="sec-pdiary";scrollSect();return}
+  ui.sect=a[1]||"";
+  if(location.hash==="#"+a[0]){ui.tab=a[0];enter();if(!ui.sect)window.scrollTo(0,0);else scrollSect()}
+  else location.hash="#"+a[0];
+});
 document.addEventListener("click",function(e){
   if(e.target.closest("#umenu"))closeMenu();
   var nav=e.target.closest("a[data-tab]");
@@ -3461,8 +3756,8 @@ document.addEventListener("change",function(e){
     renderHomeFilterResults();
     return;
   }
-  if(e.target.id==="sort"){ui.sort=e.target.value;render()}
-  if(e.target.id==="profile-sort"){ui.profileSort=e.target.value;render()}
+  if(e.target.id==="sort"){ui.sort=e.target.value;if(ui.sort==="shuffle")ui.shuffleSeed=Date.now();render()}
+  if(e.target.id==="profile-sort"){ui.profileSort=e.target.value;if(ui.profileSort==="shuffle")ui.shuffleSeed=Date.now();render()}
   if(e.target.id==="search-type"){
     ui.searchType=e.target.value;ui.q="";ui.globalHits=null;$("#q").value="";
     $("#q").placeholder=ui.searchType==="users"?"Search usernames…":"Search games…";
@@ -3506,6 +3801,7 @@ function onHash(){
   }
   enter();
   window.scrollTo(0,0);
+  scrollSect();
 }
 var imp=$("#imp");
 $("#m-import").addEventListener("click",function(){imp.showModal()});
@@ -3530,6 +3826,11 @@ $("#imp-go").addEventListener("click",function(){
 });
 window.addEventListener("hashchange",onHash);
 
+document.addEventListener("click",function(e){
+  var im=e.target.closest&&e.target.closest(".ph img.av");
+  if(im&&im.src){var d=$("#avd");$("#avd-img").src=im.src;if(d.showModal)d.showModal();else d.setAttribute("open","");return}
+  if(e.target.closest&&e.target.closest("#avd")){var d2=$("#avd");if(d2.close)d2.close();else d2.removeAttribute("open")}
+});
 var ready=initStore();
 onHash();
 })();
